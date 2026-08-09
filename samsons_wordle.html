@@ -118,7 +118,7 @@
 
 <script>
   const urlParams = new URLSearchParams(window.location.search);
-  const encodedWord = urlParams.get('w');
+  const rawWord = urlParams.get('w');
   let targetWord = "";
   
   const adminScreen = document.getElementById('admin-screen');
@@ -133,32 +133,27 @@
   let gameOver = false;
   let guesses = Array.from({length: rows}, () => Array(cols).fill(''));
 
-  if (!encodedWord) {
+  if (!rawWord) {
     adminScreen.style.display = 'flex';
   } else {
-    try {
-      targetWord = atob(encodedWord).toUpperCase();
-      if (targetWord.length === 5) {
-        gameScreen.style.display = 'flex';
-        initBoard();
-        document.addEventListener('keydown', handleKeyPress);
-      } else {
-        throw new Error("Invalid word length");
-      }
-    } catch (e) {
+    targetWord = rawWord.toUpperCase().trim();
+    if (targetWord.length === 5 && /^[A-Z]+$/.test(targetWord)) {
+      gameScreen.style.display = 'flex';
+      initBoard();
+      document.addEventListener('keydown', handleKeyPress);
+    } else {
       adminScreen.style.display = 'flex';
       alert("Invalid game link. Redirecting to Host Mode.");
     }
   }
 
   function createLink() {
-    const input = document.getElementById('secret-word').value.toUpperCase();
+    const input = document.getElementById('secret-word').value.toUpperCase().trim();
     if (input.length !== 5 || !/^[A-Z]+$/.test(input)) {
       alert("Please enter exactly 5 English letters.");
       return;
     }
-    const b64 = btoa(input);
-    const link = window.location.origin + window.location.pathname + "?w=" + b64;
+    const link = window.location.origin + window.location.pathname + "?w=" + input;
     const linkOutput = document.getElementById('link-output');
     linkOutput.style.display = 'block';
     linkOutput.innerHTML = `<strong>Your Link:</strong><br><br><a href="${link}" style="color:#538d4e;">${link}</a><br><br>Copy and send this to your friends!`;
