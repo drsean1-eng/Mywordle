@@ -49,7 +49,6 @@
   .present { background-color: #b59f3b; border-color: #b59f3b; }
   .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
   
-  /* עיצוב למקלדת שעל המסך */
   .keyboard { 
     display: flex; 
     flex-direction: column; 
@@ -108,7 +107,6 @@
 <div class="board" id="board"></div>
 <button class="share" id="share-btn" onclick="shareResult()">Share Result 🔗</button>
 
-<!-- המקלדת החדשה שמופיעה על המסך -->
 <div class="keyboard" id="keyboard">
   <div class="key-row">
     <button class="key" onclick="press('Q')">Q</button>
@@ -160,6 +158,7 @@
   const rows = 6;
   const cols = 5;
   let gameOver = false;
+  let gameWon = false; // משתנה שזוכר שניצחנו
   let guesses = Array.from({length: rows}, () => Array(cols).fill(''));
 
   initBoard();
@@ -232,6 +231,8 @@
       gameMessage.innerText = "Splendid!";
       document.getElementById('share-btn').style.display = 'block';
       gameOver = true;
+      gameWon = true;
+      currentRow++; // עכשיו זה סופר גם את השורה המנצחת!
     } else {
       currentRow++;
       currentTile = 0;
@@ -244,17 +245,10 @@
   }
 
   function shareResult() {
-    let hasWon = false;
-    let rowsToPrint = currentRow;
-
-    if (currentRow < rows && guesses[currentRow].join('') === targetWord) {
-      hasWon = true;
-      rowsToPrint = currentRow + 1;
-    }
-
-    let text = `Samson's Wordle ${hasWon ? rowsToPrint : 'X'}/6\n\n`;
-
-    for (let r = 0; r < rowsToPrint; r++) {
+    let text = `Samson's Wordle ${gameWon ? currentRow : 'X'}/6\n\n`;
+    
+    // קורא בדיוק את מה שיש על המסך שורה אחרי שורה
+    for (let r = 0; r < currentRow; r++) {
       for (let c = 0; c < cols; c++) {
         const tile = document.getElementById(`tile-${r}-${c}`);
         if (tile.classList.contains('correct')) text += '🟩';
