@@ -1,118 +1,267 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Samson's Wordle</title>
 <style>
-*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:#fff;color:#222;text-align:center}
-h1{font-size:30px;margin:22px 0 6px}.sub{color:#666;margin-bottom:18px}
-#board{width:310px;margin:15px auto 12px;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.tile{height:56px;border:2px solid #d3d6da;font-size:30px;font-weight:bold;display:flex;align-items:center;justify-content:center;text-transform:uppercase}
-.tile.filled{border-color:#888}.correct{background:#6aaa64!important;color:white;border-color:#6aaa64!important}.present{background:#c9b458!important;color:white;border-color:#c9b458!important}.absent{background:#787c7e!important;color:white;border-color:#787c7e!important}
-#keyboard{max-width:500px;margin:10px auto;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:0 8px}.key{height:48px;min-width:28px;padding:0 9px;border:0;border-radius:4px;background:#d3d6da;font-weight:bold;cursor:pointer}.key.wide{min-width:58px;font-size:12px}
-#msg{min-height:30px;font-weight:bold;font-size:17px;margin:12px}.info{font-size:13px;color:#777;margin:18px}
-#admin{display:none;margin:18px auto;padding:15px;max-width:360px;border:1px solid #ddd;border-radius:8px}.admin input{padding:9px;width:180px;text-transform:uppercase}.admin button{padding:9px}
+  body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    background-color: #121213; 
+    color: #ffffff; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    margin: 0; 
+  }
+  h1 { 
+    border-bottom: 1px solid #3a3a3c; 
+    padding: 15px 0; 
+    width: 100%; 
+    text-align: center; 
+    margin-top: 0; 
+    letter-spacing: 2px;
+  }
+  .board { 
+    display: grid; 
+    grid-template-rows: repeat(6, 1fr); 
+    grid-gap: 5px; 
+    margin-bottom: 20px; 
+  }
+  .row { 
+    display: grid; 
+    grid-template-columns: repeat(5, 1fr); 
+    grid-gap: 5px; 
+  }
+  .tile { 
+    width: 62px; 
+    height: 62px; 
+    border: 2px solid #3a3a3c; 
+    display: inline-flex; 
+    justify-content: center; 
+    align-items: center; 
+    font-size: 2rem; 
+    font-weight: bold; 
+    text-transform: uppercase; 
+  }
+  .correct { background-color: #538d4e; border-color: #538d4e; }
+  .present { background-color: #b59f3b; border-color: #b59f3b; }
+  .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+  
+  #admin-screen, #game-screen { 
+    display: none; 
+    flex-direction: column; 
+    align-items: center; 
+    width: 100%; 
+    padding: 20px; 
+    box-sizing: border-box; 
+  }
+  input { 
+    padding: 10px; 
+    font-size: 1.2rem; 
+    text-transform: uppercase; 
+    text-align: center; 
+    width: 200px; 
+    margin-bottom: 10px; 
+    background: #121213; 
+    color: white; 
+    border: 1px solid #565758; 
+  }
+  button { 
+    background-color: #538d4e; 
+    color: white; 
+    border: none; 
+    padding: 12px 20px; 
+    font-size: 1.2rem; 
+    cursor: pointer; 
+    border-radius: 4px; 
+    font-weight: bold; 
+  }
+  button:hover { background-color: #43703e; }
+  #link-output { 
+    margin-top: 20px; 
+    padding: 15px; 
+    background: #1e1e1e; 
+    border-radius: 5px; 
+    word-break: break-all; 
+    max-width: 90%; 
+    text-align: center; 
+    display: none; 
+    border: 1px solid #3a3a3c;
+  }
+  .message { 
+    margin-top: 20px; 
+    font-size: 1.2rem; 
+    font-weight: bold; 
+  }
 </style>
 </head>
 <body>
-<h1>Samson's Wordle</h1>
-<div class="sub">A private Wordle for friends</div>
-<div id="board"></div>
-<div id="msg"></div>
-<div id="keyboard"></div>
-<div class="info">6 guesses • 5 letters • Same puzzle for everyone</div>
 
-<div id="admin">
-  <b>Set today's secret word</b><br><br>
-  <input id="secretInput" maxlength="5" placeholder="5 letters">
-  <button onclick="setSecret()">Set Word</button>
-  <p style="font-size:12px;color:#777">This is for the host. Don't share the word.</p>
+<h1>SAMSON'S WORDLE</h1>
+
+<!-- מסך מנהל: כאן אתה בוחר את המילה -->
+<div id="admin-screen">
+  <h2>Host Mode</h2>
+  <p>Enter a 5-letter word to generate a secret game link for your friends.</p>
+  <input type="text" id="secret-word" maxlength="5" placeholder="5 LETTERS">
+  <button onclick="createLink()">Generate Link</button>
+  <div id="link-output"></div>
+</div>
+
+<!-- מסך המשחק לחברים -->
+<div id="game-screen">
+  <div class="board" id="board"></div>
+  <div class="message" id="game-message"></div>
+  <button id="share-btn" style="display:none; margin-top: 20px;" onclick="shareResult()">Share Result 🔗</button>
 </div>
 
 <script>
-/*
-  HOST SETUP:
-  Change SECRET below before sending the file to your friends.
-  Example: const SECRET = "APPLE";
-*/
-const SECRET = "APPLE";
+  const urlParams = new URLSearchParams(window.location.search);
+  const encodedWord = urlParams.get('w');
+  let targetWord = "";
+  
+  const adminScreen = document.getElementById('admin-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const board = document.getElementById('board');
+  const gameMessage = document.getElementById('game-message');
+  
+  let currentRow = 0;
+  let currentTile = 0;
+  const rows = 6;
+  const cols = 5;
+  let gameOver = false;
+  let guesses = Array.from({length: rows}, () => Array(cols).fill(''));
 
-const WORDS = [
-"APPLE","BEACH","BRAIN","BRAVE","CHAIR","CLOUD","DREAM","EARTH","FLAME","FRUIT",
-"GLASS","GRAPE","GREEN","HEART","HOUSE","LIGHT","MAGIC","MONEY","MOUSE","MUSIC",
-"NIGHT","OCEAN","PARTY","PEACE","PHONE","PIANO","PLANT","QUEEN","QUIET","RIVER",
-"ROBOT","ROUND","SHARE","SHINE","SMILE","SPACE","SPOON","STORM","SWEET","TABLE",
-"TIGER","TRAIN","TRUST","WATER","WORLD","WRITE","YOUTH"
-];
-
-let answer = SECRET.toUpperCase();
-let guesses=[], current="", gameOver=false;
-const board=document.getElementById("board"), msg=document.getElementById("msg"), keyboard=document.getElementById("keyboard");
-
-function makeBoard(){
-  board.innerHTML="";
-  for(let r=0;r<6;r++)for(let c=0;c<5;c++){
-    const d=document.createElement("div"); d.className="tile"; d.id=`t-${r}-${c}`; board.appendChild(d);
+  if (!encodedWord) {
+    adminScreen.style.display = 'flex';
+  } else {
+    try {
+      targetWord = atob(encodedWord).toUpperCase();
+      if (targetWord.length === 5) {
+        gameScreen.style.display = 'flex';
+        initBoard();
+        document.addEventListener('keydown', handleKeyPress);
+      } else {
+        throw new Error("Invalid word length");
+      }
+    } catch (e) {
+      adminScreen.style.display = 'flex';
+      alert("Invalid game link. Redirecting to Host Mode.");
+    }
   }
-}
-function draw(){
-  for(let r=0;r<6;r++)for(let c=0;c<5;c++){
-    const d=document.getElementById(`t-${r}-${c}`);
-    d.textContent=(guesses[r]?.[c]||"");
-  }
-  for(let c=0;c<5;c++) document.getElementById(`t-${guesses.length}-${c}`).textContent=current[c]||"";
-}
-function makeKeyboard(){
-  const rows=["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
-  keyboard.innerHTML="";
-  rows.forEach((row,i)=>{
-    if(i===2)addKey("ENTER","wide");
-    [...row].forEach(k=>addKey(k));
-    if(i===2)addKey("⌫","wide");
-  });
-}
-function addKey(k,cls=""){
-  const b=document.createElement("button");b.className="key "+cls;b.textContent=k;
-  b.onclick=()=>key(k);keyboard.appendChild(b);
-}
-function key(k){
-  if(gameOver)return;
-  if(k==="⌫"){current=current.slice(0,-1);draw();return}
-  if(k==="ENTER"){submit();return}
-  if(current.length<5){current+=k;draw()}
-}
-function submit(){
-  if(current.length!==5){msg.textContent="Enter a 5-letter word.";return}
-  if(!WORDS.includes(current) && current!==answer){msg.textContent="That word isn't in the word list.";return}
-  const guess=current; guesses.push(guess); current="";
-  for(let i=0;i<5;i++){
-    const tile=document.getElementById(`t-${guesses.length-1}-${i}`);
-    tile.classList.add(guess[i]===answer[i]?"correct":answer.includes(guess[i])?"present":"absent");
-  }
-  if(guess===answer){gameOver=true;msg.textContent=`🎉 Brilliant! You solved it in ${guesses.length}/6.`}
-  else if(guesses.length===6){gameOver=true;msg.textContent=`The word was ${answer}. Better luck tomorrow!`}
-  else msg.textContent="";
-}
-document.addEventListener("keydown",e=>{
-  if(e.key==="Enter")key("ENTER");
-  else if(e.key==="Backspace")key("⌫");
-  else if(/^[a-zA-Z]$/.test(e.key))key(e.key.toUpperCase());
-});
-function setSecret(){
-  const v=document.getElementById("secretInput").value.toUpperCase();
-  if(/^[A-Z]{5}$/.test(v)){localStorage.setItem("samsonWordleSecret",v);location.reload()}
-}
-const saved=localStorage.getItem("samsonWordleSecret");
-if(saved && /^[A-Z]{5}$/.test(saved)) answer=saved;
-makeBoard();makeKeyboard();draw();
 
-// Host shortcut: press H five times to show the private host panel.
-let hs="";
-document.addEventListener("keydown",e=>{
-  if(e.key.toLowerCase()==="h"){hs+="h";if(hs.length>=5){document.getElementById("admin").style.display="block";hs=""}}
-  else hs="";
-});
+  function createLink() {
+    const input = document.getElementById('secret-word').value.toUpperCase();
+    if (input.length !== 5 || !/^[A-Z]+$/.test(input)) {
+      alert("Please enter exactly 5 English letters.");
+      return;
+    }
+    const b64 = btoa(input);
+    const link = window.location.origin + window.location.pathname + "?w=" + b64;
+    const linkOutput = document.getElementById('link-output');
+    linkOutput.style.display = 'block';
+    linkOutput.innerHTML = `<strong>Your Link:</strong><br><br><a href="${link}" style="color:#538d4e;">${link}</a><br><br>Copy and send this to your friends!`;
+  }
+
+  function initBoard() {
+    for (let r = 0; r < rows; r++) {
+      const rowDiv = document.createElement('div');
+      rowDiv.className = 'row';
+      rowDiv.id = `row-${r}`;
+      for (let c = 0; c < cols; c++) {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.id = `tile-${r}-${c}`;
+        rowDiv.appendChild(tile);
+      }
+      board.appendChild(rowDiv);
+    }
+  }
+
+  function handleKeyPress(e) {
+    if (gameOver) return;
+    
+    if (e.key === 'Enter') {
+      checkGuess();
+    } else if (e.key === 'Backspace') {
+      if (currentTile > 0) {
+        currentTile--;
+        guesses[currentRow][currentTile] = '';
+        updateTile(currentRow, currentTile, '');
+      }
+    } else if (/^[a-zA-Z]$/.test(e.key) && currentTile < cols) {
+      guesses[currentRow][currentTile] = e.key.toUpperCase();
+      updateTile(currentRow, currentTile, e.key.toUpperCase());
+      currentTile++;
+    }
+  }
+
+  function updateTile(r, c, letter) {
+    const tile = document.getElementById(`tile-${r}-${c}`);
+    tile.innerText = letter;
+  }
+
+  function checkGuess() {
+    if (currentTile < cols) {
+      alert("Not enough letters");
+      return;
+    }
+
+    const guessString = guesses[currentRow].join('');
+    let targetArray = targetWord.split('');
+    let guessArray = guessString.split('');
+    
+    for (let i = 0; i < cols; i++) {
+      if (guessArray[i] === targetArray[i]) {
+        document.getElementById(`tile-${currentRow}-${i}`).classList.add('correct');
+        targetArray[i] = null;
+        guessArray[i] = null;
+      }
+    }
+    
+    for (let i = 0; i < cols; i++) {
+      if (guessArray[i] !== null) {
+        let index = targetArray.indexOf(guessArray[i]);
+        if (index > -1) {
+          document.getElementById(`tile-${currentRow}-${i}`).classList.add('present');
+          targetArray[index] = null;
+        } else {
+          document.getElementById(`tile-${currentRow}-${i}`).classList.add('absent');
+        }
+      }
+    }
+
+    if (guessString === targetWord) {
+      gameMessage.innerText = "Splendid! You guessed the word!";
+      document.getElementById('share-btn').style.display = 'block';
+      gameOver = true;
+    } else {
+      currentRow++;
+      currentTile = 0;
+      if (currentRow >= rows) {
+        gameMessage.innerText = `Game Over. The word was ${targetWord}.`;
+        gameOver = true;
+      }
+    }
+  }
+
+  function shareResult() {
+    let text = `Samson's Wordle ${gameOver && guesses[currentRow-1]?.join('') === targetWord ? currentRow : 'X'}/6\n\n`;
+    const finalRow = gameOver && guesses[currentRow-1]?.join('') === targetWord ? currentRow : currentRow;
+    for (let r = 0; r < finalRow; r++) {
+      for (let c = 0; c < cols; c++) {
+        const tile = document.getElementById(`tile-${r}-${c}`);
+        if (tile.classList.contains('correct')) text += '🟩';
+        else if (tile.classList.contains('present')) text += '🟨';
+        else text += '⬛';
+      }
+      text += '\n';
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Result copied! You can now paste it in WhatsApp.");
+    });
+  }
 </script>
 </body>
 </html>
