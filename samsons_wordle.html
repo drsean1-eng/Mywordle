@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Samson's Wordle</title>
 <style>
   body { 
@@ -13,6 +13,7 @@
     flex-direction: column; 
     align-items: center; 
     margin: 0; 
+    padding-bottom: 20px;
   }
   h1 { 
     border-bottom: 1px solid #3a3a3c; 
@@ -20,14 +21,13 @@
     width: 100%; 
     text-align: center; 
     margin-top: 0; 
-    letter-spacing: 2px;
+    letter-spacing: 2px; 
   }
   .board { 
     display: grid; 
     grid-template-rows: repeat(6, 1fr); 
     grid-gap: 5px; 
-    margin-bottom: 20px;
-    margin-top: 20px;
+    margin: 10px 0; 
   }
   .row { 
     display: grid; 
@@ -35,8 +35,8 @@
     grid-gap: 5px; 
   }
   .tile { 
-    width: 62px; 
-    height: 62px; 
+    width: 58px; 
+    height: 58px; 
     border: 2px solid #3a3a3c; 
     display: inline-flex; 
     justify-content: center; 
@@ -49,29 +49,54 @@
   .present { background-color: #b59f3b; border-color: #b59f3b; }
   .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
   
-  #game-screen { 
+  /* עיצוב למקלדת שעל המסך */
+  .keyboard { 
     display: flex; 
     flex-direction: column; 
-    align-items: center; 
-    width: 100%; 
-    padding: 20px; 
-    box-sizing: border-box; 
+    width: 98%; 
+    max-width: 500px; 
+    gap: 8px; 
+    margin-top: 10px;
   }
-  button { 
-    background-color: #538d4e; 
+  .key-row { 
+    display: flex; 
+    justify-content: center; 
+    gap: 6px; 
+  }
+  .key { 
+    background-color: #818384; 
     color: white; 
     border: none; 
-    padding: 12px 20px; 
-    font-size: 1.2rem; 
-    cursor: pointer; 
     border-radius: 4px; 
+    padding: 16px 0; 
+    font-size: 1.1rem; 
     font-weight: bold; 
+    cursor: pointer; 
+    flex: 1; 
+    text-align: center; 
   }
-  button:hover { background-color: #43703e; }
+  .key.large { 
+    flex: 1.5; 
+    font-size: 0.9rem; 
+  }
   .message { 
-    margin-top: 20px; 
     font-size: 1.2rem; 
     font-weight: bold; 
+    text-align: center; 
+    height: 25px;
+    margin-top: 10px;
+  }
+  button.share { 
+    background-color: #538d4e; 
+    padding: 15px 30px; 
+    font-size: 1.2rem; 
+    border-radius: 5px; 
+    border: none; 
+    color: white; 
+    font-weight: bold; 
+    cursor: pointer; 
+    margin-top: 10px; 
+    display: none; 
   }
 </style>
 </head>
@@ -79,10 +104,46 @@
 
 <h1>SAMSON'S WORDLE</h1>
 
-<div id="game-screen">
-  <div class="board" id="board"></div>
-  <div class="message" id="game-message"></div>
-  <button id="share-btn" style="display:none; margin-top: 20px;" onclick="shareResult()">Share Result 🔗</button>
+<div class="message" id="game-message"></div>
+<div class="board" id="board"></div>
+<button class="share" id="share-btn" onclick="shareResult()">Share Result 🔗</button>
+
+<!-- המקלדת החדשה שמופיעה על המסך -->
+<div class="keyboard" id="keyboard">
+  <div class="key-row">
+    <button class="key" onclick="press('Q')">Q</button>
+    <button class="key" onclick="press('W')">W</button>
+    <button class="key" onclick="press('E')">E</button>
+    <button class="key" onclick="press('R')">R</button>
+    <button class="key" onclick="press('T')">T</button>
+    <button class="key" onclick="press('Y')">Y</button>
+    <button class="key" onclick="press('U')">U</button>
+    <button class="key" onclick="press('I')">I</button>
+    <button class="key" onclick="press('O')">O</button>
+    <button class="key" onclick="press('P')">P</button>
+  </div>
+  <div class="key-row">
+    <button class="key" onclick="press('A')">A</button>
+    <button class="key" onclick="press('S')">S</button>
+    <button class="key" onclick="press('D')">D</button>
+    <button class="key" onclick="press('F')">F</button>
+    <button class="key" onclick="press('G')">G</button>
+    <button class="key" onclick="press('H')">H</button>
+    <button class="key" onclick="press('J')">J</button>
+    <button class="key" onclick="press('K')">K</button>
+    <button class="key" onclick="press('L')">L</button>
+  </div>
+  <div class="key-row">
+    <button class="key large" onclick="press('Enter')">ENTER</button>
+    <button class="key" onclick="press('Z')">Z</button>
+    <button class="key" onclick="press('X')">X</button>
+    <button class="key" onclick="press('C')">C</button>
+    <button class="key" onclick="press('V')">V</button>
+    <button class="key" onclick="press('B')">B</button>
+    <button class="key" onclick="press('N')">N</button>
+    <button class="key" onclick="press('M')">M</button>
+    <button class="key large" onclick="press('Backspace')">⌫</button>
+  </div>
 </div>
 
 <script>
@@ -101,15 +162,13 @@
   let gameOver = false;
   let guesses = Array.from({length: rows}, () => Array(cols).fill(''));
 
-  // הפעלת המשחק מיד
   initBoard();
-  document.addEventListener('keydown', handleKeyPress);
+  document.addEventListener('keydown', (e) => press(e.key));
 
   function initBoard() {
     for (let r = 0; r < rows; r++) {
       const rowDiv = document.createElement('div');
       rowDiv.className = 'row';
-      rowDiv.id = `row-${r}`;
       for (let c = 0; c < cols; c++) {
         const tile = document.createElement('div');
         tile.className = 'tile';
@@ -120,32 +179,28 @@
     }
   }
 
-  function handleKeyPress(e) {
+  function press(key) {
     if (gameOver) return;
     
-    if (e.key === 'Enter') {
+    if (key === 'Enter') {
       checkGuess();
-    } else if (e.key === 'Backspace') {
+    } else if (key === 'Backspace' || key === '⌫') {
       if (currentTile > 0) {
         currentTile--;
         guesses[currentRow][currentTile] = '';
-        updateTile(currentRow, currentTile, '');
+        document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = '';
       }
-    } else if (/^[a-zA-Z]$/.test(e.key) && currentTile < cols) {
-      guesses[currentRow][currentTile] = e.key.toUpperCase();
-      updateTile(currentRow, currentTile, e.key.toUpperCase());
+    } else if (/^[a-zA-Z]$/.test(key) && currentTile < cols) {
+      guesses[currentRow][currentTile] = key.toUpperCase();
+      document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = key.toUpperCase();
       currentTile++;
     }
   }
 
-  function updateTile(r, c, letter) {
-    const tile = document.getElementById(`tile-${r}-${c}`);
-    tile.innerText = letter;
-  }
-
   function checkGuess() {
     if (currentTile < cols) {
-      alert("Not enough letters");
+      gameMessage.innerText = "Not enough letters";
+      setTimeout(() => gameMessage.innerText = "", 2000);
       return;
     }
 
@@ -174,7 +229,7 @@
     }
 
     if (guessString === targetWord) {
-      gameMessage.innerText = "Splendid! You guessed the word!";
+      gameMessage.innerText = "Splendid!";
       document.getElementById('share-btn').style.display = 'block';
       gameOver = true;
     } else {
