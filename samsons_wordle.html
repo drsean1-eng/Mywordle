@@ -1,79 +1,152 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Samson's Wordle</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordle</title>
 <style>
-  body { font-family: sans-serif; background-color: #121213; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; padding-bottom: 20px; }
-  .board { display: grid; grid-template-rows: repeat(6, 1fr); grid-gap: 5px; margin: 10px 0; }
-  .row { display: grid; grid-template-columns: repeat(5, 1fr); grid-gap: 5px; }
-  .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: inline-flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
-  .correct { background-color: #538d4e; }
-  .present { background-color: #b59f3b; }
-  .absent { background-color: #3a3a3c; }
-  #share-area { display: none; width: 90%; margin-top: 20px; text-align: center; }
-  textarea { width: 100%; height: 100px; background: #222; color: white; border: 1px solid #555; padding: 10px; font-size: 1rem; }
+  body { 
+    background: #121213; 
+    color: white; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    font-family: sans-serif; 
+    margin: 0; 
+  }
+  .board { 
+    display: grid; 
+    grid-template-rows: repeat(6, 1fr); 
+    gap: 5px; 
+    margin: 10px 0; 
+  }
+  .row { 
+    display: grid; 
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 5px; 
+  }
+  .tile { 
+    width: 50px; 
+    height: 50px; 
+    border: 2px solid #3a3a3c; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    font-size: 2rem; 
+    font-weight: bold; 
+  }
+  .c { background: #538d4e; }
+  .p { background: #b59f3b; }
+  .a { background: #3a3a3c; }
+  #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
+  textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; }
 </style>
 </head>
 <body>
 <h1>SAMSON'S WORDLE</h1>
-<div class="board" id="board"></div>
-<div id="share-area">
-  <p>Copy your result:</p>
-  <textarea id="result-text" readonly></textarea>
+<div class="board" id="b"></div>
+<div id="box">
+  <p>העתק את התוצאה לכאן:</p>
+  <textarea id="res" readonly></textarea>
 </div>
+
 <script>
-  const targetWord = "APPLE";
-  let currentRow = 0, currentTile = 0, gameOver = false, gameWon = false;
+  const word = "APPLE";
+  let r = 0, t = 0, over = false, won = false;
   let guesses = Array.from({length: 6}, () => Array(5).fill(''));
 
-  const board = document.getElementById('board');
-  for (let r = 0; r < 6; r++) {
-    const row = document.createElement('div'); row.className = 'row';
-    for (let c = 0; c < 5; c++) {
-      const tile = document.createElement('div'); tile.className = 'tile'; tile.id = `tile-${r}-${c}`;
+  const board = document.getElementById('b');
+  for (let i = 0; i < 6; i++) {
+    let row = document.createElement('div');
+    row.className = 'row';
+    for (let j = 0; j < 5; j++) {
+      let tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.id = `t-${i}-${j}`;
       row.appendChild(tile);
     }
     board.appendChild(row);
   }
 
-  function press(key) {
-    if (gameOver) return;
-    if (key === 'Enter') checkGuess();
-    else if (key === 'Backspace') { if (currentTile > 0) { currentTile--; document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = ''; } }
-    else if (currentTile < 5) { guesses[currentRow][currentTile] = key; document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = key; currentTile++; }
-  }
-  // הוספת מקלדת פשוטה מאוד
-  document.body.innerHTML += '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:5px; width:95%; margin-top:10px;">' + "QWERTYUIOPASDFGHJKLZXCVBNM".split('').map(k => `<button style="padding:10px;" onclick="press('${k}')">${k}</button>`).join('') + '<button onclick="press(\'Enter\')">OK</button><button onclick="press(\'Backspace\')">⌫</button></div>';
-
-  function checkGuess() {
-    if (currentTile < 5) return;
-    let guess = guesses[currentRow].join('');
-    for (let i = 0; i < 5; i++) {
-      let t = document.getElementById(`tile-${currentRow}-${i}`);
-      if (guess[i] === targetWord[i]) t.classList.add('correct');
-      else if (targetWord.includes(guess[i])) t.classList.add('present');
-      else t.classList.add('absent');
+  function press(k) {
+    if (over) return;
+    if (k === 'ENTER') check();
+    else if (k === 'DEL') {
+      if (t > 0) {
+        t--;
+        guesses[r][t] = '';
+        document.getElementById(`t-${r}-${t}`).innerText = '';
+      }
+    } else if (t < 5) {
+      guesses[r][t] = k;
+      document.getElementById(`t-${r}-${t}`).innerText = k;
+      t++;
     }
-    if (guess === targetWord) { gameOver = true; gameWon = true; showShare(); }
-    else if (currentRow === 5) { gameOver = true; showShare(); }
-    else { currentRow++; currentTile = 0; }
   }
 
-  function showShare() {
-    document.getElementById('share-area').style.display = 'block';
-    let text = `Samson's Wordle ${gameWon ? currentRow + 1 : 'X'}/6\n\n`;
-    for (let r = 0; r <= currentRow; r++) {
-      for (let c = 0; c < 5; c++) {
-        let t = document.getElementById(`tile-${r}-${c}`);
-        if (t.classList.contains('correct')) text += '🟩';
-        else if (t.classList.contains('present')) text += '🟨';
+  let keysHtml = '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; width:98%; max-width:400px; margin-top:10px;">';
+  "QWERTYUIOPASDFGHJKLZXCVBNM".split('').forEach(ch => {
+    keysHtml += `<button style="padding:12px 0; font-weight:bold;" onclick="press('${ch}')">${ch}</button>`;
+  });
+  keysHtml += `<button style="grid-column: span 3; padding:10px;" onclick="press('ENTER')">ENTER</button>`;
+  keysHtml += `<button style="grid-column: span 3; padding:10px;" onclick="press('DEL')">⌫</button></div>`;
+  document.body.innerHTML += keysHtml;
+
+  function check() {
+    if (t < 5) return;
+    let guess = guesses[r].join('');
+    let targetArr = word.split('');
+    let guessArr = guess.split('');
+
+    for (let i = 0; i < 5; i++) {
+      let el = document.getElementById(`t-${r}-${i}`);
+      if (guessArr[i] === targetArr[i]) {
+        el.classList.add('c');
+        targetArr[i] = null;
+        guessArr[i] = null;
+      }
+    }
+    for (let i = 0; i < 5; i++) {
+      if (guessArr[i] !== null) {
+        let el = document.getElementById(`t-${r}-${i}`);
+        let idx = targetArr.indexOf(guessArr[i]);
+        if (idx > -1) {
+          el.classList.add('p');
+          targetArr[idx] = null;
+        } else {
+          el.classList.add('a');
+        }
+      }
+    }
+
+    if (guess === word) {
+      over = true;
+      won = true;
+      r++;
+      show();
+    } else if (r === 5) {
+      over = true;
+      r++;
+      show();
+    } else {
+      r++;
+      t = 0;
+    }
+  }
+
+  function show() {
+    document.getElementById('box').style.display = 'block';
+    let text = `Samson's Wordle ${won ? r : 'X'}/6\n\n`;
+    for (let i = 0; i < r; i++) {
+      for (let j = 0; j < 5; j++) {
+        let el = document.getElementById(`t-${i}-${j}`);
+        if (el.classList.contains('c')) text += '🟩';
+        else if (el.classList.contains('p')) text += '🟨';
         else text += '⬛';
       }
       text += '\n';
     }
-    document.getElementById('result-text').value = text;
+    document.getElementById('res').value = text;
   }
 </script>
 </body>
