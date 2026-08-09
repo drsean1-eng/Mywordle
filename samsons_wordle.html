@@ -117,8 +117,9 @@
 </div>
 
 <script>
+  // שימוש בקידוד בטוח שמונע תווים בעייתיים בוואטסאפ
   const urlParams = new URLSearchParams(window.location.search);
-  const rawWord = urlParams.get('w');
+  const encodedWord = urlParams.get('w');
   let targetWord = "";
   
   const adminScreen = document.getElementById('admin-screen');
@@ -133,15 +134,20 @@
   let gameOver = false;
   let guesses = Array.from({length: rows}, () => Array(cols).fill(''));
 
-  if (!rawWord) {
+  if (!encodedWord) {
     adminScreen.style.display = 'flex';
   } else {
-    targetWord = rawWord.toUpperCase().trim();
-    if (targetWord.length === 5 && /^[A-Z]+$/.test(targetWord)) {
-      gameScreen.style.display = 'flex';
-      initBoard();
-      document.addEventListener('keydown', handleKeyPress);
-    } else {
+    try {
+      // פענוח הפוך ובטוח
+      targetWord = atob(encodedWord.replace(/-/g, '+').replace(/_/g, '/')).toUpperCase();
+      if (targetWord.length === 5) {
+        gameScreen.style.display = 'flex';
+        initBoard();
+        document.addEventListener('keydown', handleKeyPress);
+      } else {
+        throw new Error();
+      }
+    } catch (e) {
       adminScreen.style.display = 'flex';
       alert("Invalid game link. Redirecting to Host Mode.");
     }
@@ -153,7 +159,9 @@
       alert("Please enter exactly 5 English letters.");
       return;
     }
-    const link = window.location.origin + window.location.pathname + "?w=" + input;
+    // הצפנה בטוחה לחלוטין ללא סימנים שוואטסאפ שובר
+    let b64 = btoa(input).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const link = window.location.origin + window.location.pathname + "?w=" + b64;
     const linkOutput = document.getElementById('link-output');
     linkOutput.style.display = 'block';
     linkOutput.innerHTML = `<strong>Your Link:</strong><br><br><a href="${link}" style="color:#538d4e;">${link}</a><br><br>Copy and send this to your friends!`;
