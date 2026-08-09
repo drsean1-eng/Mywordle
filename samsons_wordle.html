@@ -5,272 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Samson's Wordle</title>
 <style>
-  body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    background-color: #121213; 
-    color: #ffffff; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    margin: 0; 
-    padding-bottom: 20px;
-  }
-  h1 { 
-    border-bottom: 1px solid #3a3a3c; 
-    padding: 15px 0; 
-    width: 100%; 
-    text-align: center; 
-    margin-top: 0; 
-    letter-spacing: 2px; 
-  }
-  .board { 
-    display: grid; 
-    grid-template-rows: repeat(6, 1fr); 
-    grid-gap: 5px; 
-    margin: 10px 0; 
-  }
-  .row { 
-    display: grid; 
-    grid-template-columns: repeat(5, 1fr); 
-    grid-gap: 5px; 
-  }
-  .tile { 
-    width: 58px; 
-    height: 58px; 
-    border: 2px solid #3a3a3c; 
-    display: inline-flex; 
-    justify-content: center; 
-    align-items: center; 
-    font-size: 2rem; 
-    font-weight: bold; 
-    text-transform: uppercase; 
-  }
-  .correct { background-color: #538d4e; border-color: #538d4e; }
-  .present { background-color: #b59f3b; border-color: #b59f3b; }
-  .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
-  
-  .keyboard { 
-    display: flex; 
-    flex-direction: column; 
-    width: 98%; 
-    max-width: 500px; 
-    gap: 8px; 
-    margin-top: 10px;
-  }
-  .key-row { 
-    display: flex; 
-    justify-content: center; 
-    gap: 6px; 
-  }
-  .key { 
-    background-color: #818384; 
-    color: white; 
-    border: none; 
-    border-radius: 4px; 
-    padding: 16px 0; 
-    font-size: 1.1rem; 
-    font-weight: bold; 
-    cursor: pointer; 
-    flex: 1; 
-    text-align: center; 
-  }
-  .key.large { 
-    flex: 1.5; 
-    font-size: 0.9rem; 
-  }
-  .message { 
-    font-size: 1.2rem; 
-    font-weight: bold; 
-    text-align: center; 
-    height: 25px;
-    margin-top: 10px;
-  }
-  button.share { 
-    background-color: #538d4e; 
-    padding: 15px 30px; 
-    font-size: 1.2rem; 
-    border-radius: 5px; 
-    border: none; 
-    color: white; 
-    font-weight: bold; 
-    cursor: pointer; 
-    margin-top: 10px; 
-    display: none; 
-  }
+  body { font-family: sans-serif; background-color: #121213; color: white; display: flex; flex-direction: column; align-items: center; margin: 0; padding-bottom: 20px; }
+  .board { display: grid; grid-template-rows: repeat(6, 1fr); grid-gap: 5px; margin: 10px 0; }
+  .row { display: grid; grid-template-columns: repeat(5, 1fr); grid-gap: 5px; }
+  .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: inline-flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
+  .correct { background-color: #538d4e; }
+  .present { background-color: #b59f3b; }
+  .absent { background-color: #3a3a3c; }
+  #share-area { display: none; width: 90%; margin-top: 20px; text-align: center; }
+  textarea { width: 100%; height: 100px; background: #222; color: white; border: 1px solid #555; padding: 10px; font-size: 1rem; }
 </style>
 </head>
 <body>
-
 <h1>SAMSON'S WORDLE</h1>
-
-<div class="message" id="game-message"></div>
 <div class="board" id="board"></div>
-<button class="share" id="share-btn" onclick="shareResult()">Share Result 🔗</button>
-
-<div class="keyboard" id="keyboard">
-  <div class="key-row">
-    <button class="key" onclick="press('Q')">Q</button>
-    <button class="key" onclick="press('W')">W</button>
-    <button class="key" onclick="press('E')">E</button>
-    <button class="key" onclick="press('R')">R</button>
-    <button class="key" onclick="press('T')">T</button>
-    <button class="key" onclick="press('Y')">Y</button>
-    <button class="key" onclick="press('U')">U</button>
-    <button class="key" onclick="press('I')">I</button>
-    <button class="key" onclick="press('O')">O</button>
-    <button class="key" onclick="press('P')">P</button>
-  </div>
-  <div class="key-row">
-    <button class="key" onclick="press('A')">A</button>
-    <button class="key" onclick="press('S')">S</button>
-    <button class="key" onclick="press('D')">D</button>
-    <button class="key" onclick="press('F')">F</button>
-    <button class="key" onclick="press('G')">G</button>
-    <button class="key" onclick="press('H')">H</button>
-    <button class="key" onclick="press('J')">J</button>
-    <button class="key" onclick="press('K')">K</button>
-    <button class="key" onclick="press('L')">L</button>
-  </div>
-  <div class="key-row">
-    <button class="key large" onclick="press('Enter')">ENTER</button>
-    <button class="key" onclick="press('Z')">Z</button>
-    <button class="key" onclick="press('X')">X</button>
-    <button class="key" onclick="press('C')">C</button>
-    <button class="key" onclick="press('V')">V</button>
-    <button class="key" onclick="press('B')">B</button>
-    <button class="key" onclick="press('N')">N</button>
-    <button class="key" onclick="press('M')">M</button>
-    <button class="key large" onclick="press('Backspace')">⌫</button>
-  </div>
+<div id="share-area">
+  <p>Copy your result:</p>
+  <textarea id="result-text" readonly></textarea>
 </div>
-
 <script>
-  // ==========================================
-  // כאן אתה משנה את המילה הסודית בכל יום!
-  // ==========================================
   const targetWord = "APPLE";
-  
+  let currentRow = 0, currentTile = 0, gameOver = false, gameWon = false;
+  let guesses = Array.from({length: 6}, () => Array(5).fill(''));
+
   const board = document.getElementById('board');
-  const gameMessage = document.getElementById('game-message');
-  
-  let currentRow = 0;
-  let currentTile = 0;
-  const rows = 6;
-  const cols = 5;
-  let gameOver = false;
-  let gameWon = false;
-  let guesses = Array.from({length: rows}, () => Array(cols).fill(''));
-
-  initBoard();
-  document.addEventListener('keydown', (e) => press(e.key));
-
-  function initBoard() {
-    for (let r = 0; r < rows; r++) {
-      const rowDiv = document.createElement('div');
-      rowDiv.className = 'row';
-      for (let c = 0; c < cols; c++) {
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-        tile.id = `tile-${r}-${c}`;
-        rowDiv.appendChild(tile);
-      }
-      board.appendChild(rowDiv);
+  for (let r = 0; r < 6; r++) {
+    const row = document.createElement('div'); row.className = 'row';
+    for (let c = 0; c < 5; c++) {
+      const tile = document.createElement('div'); tile.className = 'tile'; tile.id = `tile-${r}-${c}`;
+      row.appendChild(tile);
     }
+    board.appendChild(row);
   }
 
   function press(key) {
     if (gameOver) return;
-    
-    if (key === 'Enter') {
-      checkGuess();
-    } else if (key === 'Backspace' || key === '⌫') {
-      if (currentTile > 0) {
-        currentTile--;
-        guesses[currentRow][currentTile] = '';
-        document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = '';
-      }
-    } else if (/^[a-zA-Z]$/.test(key) && currentTile < cols) {
-      guesses[currentRow][currentTile] = key.toUpperCase();
-      document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = key.toUpperCase();
-      currentTile++;
-    }
+    if (key === 'Enter') checkGuess();
+    else if (key === 'Backspace') { if (currentTile > 0) { currentTile--; document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = ''; } }
+    else if (currentTile < 5) { guesses[currentRow][currentTile] = key; document.getElementById(`tile-${currentRow}-${currentTile}`).innerText = key; currentTile++; }
   }
+  // הוספת מקלדת פשוטה מאוד
+  document.body.innerHTML += '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:5px; width:95%; margin-top:10px;">' + "QWERTYUIOPASDFGHJKLZXCVBNM".split('').map(k => `<button style="padding:10px;" onclick="press('${k}')">${k}</button>`).join('') + '<button onclick="press(\'Enter\')">OK</button><button onclick="press(\'Backspace\')">⌫</button></div>';
 
   function checkGuess() {
-    if (currentTile < cols) {
-      gameMessage.innerText = "Not enough letters";
-      setTimeout(() => gameMessage.innerText = "", 2000);
-      return;
+    if (currentTile < 5) return;
+    let guess = guesses[currentRow].join('');
+    for (let i = 0; i < 5; i++) {
+      let t = document.getElementById(`tile-${currentRow}-${i}`);
+      if (guess[i] === targetWord[i]) t.classList.add('correct');
+      else if (targetWord.includes(guess[i])) t.classList.add('present');
+      else t.classList.add('absent');
     }
-
-    const guessString = guesses[currentRow].join('');
-    let targetArray = targetWord.split('');
-    let guessArray = guessString.split('');
-    
-    for (let i = 0; i < cols; i++) {
-      if (guessArray[i] === targetArray[i]) {
-        document.getElementById(`tile-${currentRow}-${i}`).classList.add('correct');
-        targetArray[i] = null;
-        guessArray[i] = null;
-      }
-    }
-    
-    for (let i = 0; i < cols; i++) {
-      if (guessArray[i] !== null) {
-        let index = targetArray.indexOf(guessArray[i]);
-        if (index > -1) {
-          document.getElementById(`tile-${currentRow}-${i}`).classList.add('present');
-          targetArray[index] = null;
-        } else {
-          document.getElementById(`tile-${currentRow}-${i}`).classList.add('absent');
-        }
-      }
-    }
-
-    if (guessString === targetWord) {
-      gameMessage.innerText = "Splendid!";
-      document.getElementById('share-btn').style.display = 'block';
-      gameOver = true;
-      gameWon = true;
-      currentRow++;
-    } else {
-      currentRow++;
-      currentTile = 0;
-      if (currentRow >= rows) {
-        gameMessage.innerText = `Game Over. The word was ${targetWord}.`;
-        document.getElementById('share-btn').style.display = 'block';
-        gameOver = true;
-      }
-    }
+    if (guess === targetWord) { gameOver = true; gameWon = true; showShare(); }
+    else if (currentRow === 5) { gameOver = true; showShare(); }
+    else { currentRow++; currentTile = 0; }
   }
 
-  function shareResult() {
-    let text = `Samson's Wordle ${gameWon ? currentRow : 'X'}/6\n\n`;
-    
-    for (let r = 0; r < currentRow; r++) {
-      for (let c = 0; c < cols; c++) {
-        const tile = document.getElementById(`tile-${r}-${c}`);
-        if (tile.classList.contains('correct')) text += '🟩';
-        else if (tile.classList.contains('present')) text += '🟨';
+  function showShare() {
+    document.getElementById('share-area').style.display = 'block';
+    let text = `Samson's Wordle ${gameWon ? currentRow + 1 : 'X'}/6\n\n`;
+    for (let r = 0; r <= currentRow; r++) {
+      for (let c = 0; c < 5; c++) {
+        let t = document.getElementById(`tile-${r}-${c}`);
+        if (t.classList.contains('correct')) text += '🟩';
+        else if (t.classList.contains('present')) text += '🟨';
         else text += '⬛';
       }
       text += '\n';
     }
-
-    // שיטת גיבוי אוניברסלית להעתקה שעובדת תמיד בנייד
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.position = "fixed";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      alert("Result copied! You can now paste it in WhatsApp.");
-    } catch (err) {
-      alert("Failed to copy. Please try again.");
-    }
-    document.body.removeChild(textArea);
+    document.getElementById('result-text').value = text;
   }
 </script>
 </body>
