@@ -1,270 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Samson's Wordle</title>
 <style>
-  body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    background-color: #121213; 
-    color: #ffffff; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    margin: 0; 
-  }
-  h1 { 
-    border-bottom: 1px solid #3a3a3c; 
-    padding: 15px 0; 
-    width: 100%; 
-    text-align: center; 
-    margin-top: 0; 
-    letter-spacing: 2px;
-  }
-  .board { 
-    display: grid; 
-    grid-template-rows: repeat(6, 1fr); 
-    grid-gap: 5px; 
-    margin-bottom: 20px; 
-  }
-  .row { 
-    display: grid; 
-    grid-template-columns: repeat(5, 1fr); 
-    grid-gap: 5px; 
-  }
-  .tile { 
-    width: 62px; 
-    height: 62px; 
-    border: 2px solid #3a3a3c; 
-    display: inline-flex; 
-    justify-content: center; 
-    align-items: center; 
-    font-size: 2rem; 
-    font-weight: bold; 
-    text-transform: uppercase; 
-  }
-  .correct { background-color: #538d4e; border-color: #538d4e; }
-  .present { background-color: #b59f3b; border-color: #b59f3b; }
-  .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
-  
-  #admin-screen, #game-screen { 
-    display: none; 
-    flex-direction: column; 
-    align-items: center; 
-    width: 100%; 
-    padding: 20px; 
-    box-sizing: border-box; 
-  }
-  input { 
-    padding: 10px; 
-    font-size: 1.2rem; 
-    text-transform: uppercase; 
-    text-align: center; 
-    width: 200px; 
-    margin-bottom: 10px; 
-    background: #121213; 
-    color: white; 
-    border: 1px solid #565758; 
-  }
-  button { 
-    background-color: #538d4e; 
-    color: white; 
-    border: none; 
-    padding: 12px 20px; 
-    font-size: 1.2rem; 
-    cursor: pointer; 
-    border-radius: 4px; 
-    font-weight: bold; 
-  }
-  button:hover { background-color: #43703e; }
-  #link-output { 
-    margin-top: 20px; 
-    padding: 15px; 
-    background: #1e1e1e; 
-    border-radius: 5px; 
-    word-break: break-all; 
-    max-width: 90%; 
-    text-align: center; 
-    display: none; 
-    border: 1px solid #3a3a3c;
-  }
-  .message { 
-    margin-top: 20px; 
-    font-size: 1.2rem; 
-    font-weight: bold; 
-  }
+  body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+  .board { display: grid; grid-template-rows: repeat(6, 60px); grid-gap: 5px; margin-top: 20px; }
+  .row { display: grid; grid-template-columns: repeat(5, 60px); grid-gap: 5px; }
+  .tile { border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
 </style>
 </head>
 <body>
-
 <h1>SAMSON'S WORDLE</h1>
-
-<!-- מסך מנהל: כאן אתה בוחר את המילה -->
-<div id="admin-screen">
-  <h2>Host Mode</h2>
-  <p>Enter a 5-letter word to generate a secret game link for your friends.</p>
-  <input type="text" id="secret-word" maxlength="5" placeholder="5 LETTERS">
-  <button onclick="createLink()">Generate Link</button>
-  <div id="link-output"></div>
-</div>
-
-<!-- מסך המשחק לחברים -->
-<div id="game-screen">
-  <div class="board" id="board"></div>
-  <div class="message" id="game-message"></div>
-  <button id="share-btn" style="display:none; margin-top: 20px;" onclick="shareResult()">Share Result 🔗</button>
-</div>
-
+<div class="board" id="board"></div>
 <script>
-  // שימוש בקידוד בטוח שמונע תווים בעייתיים בוואטסאפ
-  const urlParams = new URLSearchParams(window.location.search);
-  const encodedWord = urlParams.get('w');
-  let targetWord = "";
+  // פשוט תשנה את המילה שבין הגרשיים בכל יום ותשמור את הקובץ:
+  let targetWord = "APPLE"; 
   
-  const adminScreen = document.getElementById('admin-screen');
-  const gameScreen = document.getElementById('game-screen');
   const board = document.getElementById('board');
-  const gameMessage = document.getElementById('game-message');
-  
-  let currentRow = 0;
-  let currentTile = 0;
-  const rows = 6;
-  const cols = 5;
-  let gameOver = false;
-  let guesses = Array.from({length: rows}, () => Array(cols).fill(''));
-
-  if (!encodedWord) {
-    adminScreen.style.display = 'flex';
-  } else {
-    try {
-      // פענוח הפוך ובטוח
-      targetWord = atob(encodedWord.replace(/-/g, '+').replace(/_/g, '/')).toUpperCase();
-      if (targetWord.length === 5) {
-        gameScreen.style.display = 'flex';
-        initBoard();
-        document.addEventListener('keydown', handleKeyPress);
-      } else {
-        throw new Error();
-      }
-    } catch (e) {
-      adminScreen.style.display = 'flex';
-      alert("Invalid game link. Redirecting to Host Mode.");
+  for (let r = 0; r < 6; r++) {
+    const row = document.createElement('div'); row.className = 'row';
+    for (let c = 0; c < 5; c++) {
+      const tile = document.createElement('div'); tile.className = 'tile';
+      row.appendChild(tile);
     }
+    board.appendChild(row);
   }
-
-  function createLink() {
-    const input = document.getElementById('secret-word').value.toUpperCase().trim();
-    if (input.length !== 5 || !/^[A-Z]+$/.test(input)) {
-      alert("Please enter exactly 5 English letters.");
-      return;
-    }
-    // הצפנה בטוחה לחלוטין ללא סימנים שוואטסאפ שובר
-    let b64 = btoa(input).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-    const link = window.location.origin + window.location.pathname + "?w=" + b64;
-    const linkOutput = document.getElementById('link-output');
-    linkOutput.style.display = 'block';
-    linkOutput.innerHTML = `<strong>Your Link:</strong><br><br><a href="${link}" style="color:#538d4e;">${link}</a><br><br>Copy and send this to your friends!`;
-  }
-
-  function initBoard() {
-    for (let r = 0; r < rows; r++) {
-      const rowDiv = document.createElement('div');
-      rowDiv.className = 'row';
-      rowDiv.id = `row-${r}`;
-      for (let c = 0; c < cols; c++) {
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-        tile.id = `tile-${r}-${c}`;
-        rowDiv.appendChild(tile);
-      }
-      board.appendChild(rowDiv);
-    }
-  }
-
-  function handleKeyPress(e) {
-    if (gameOver) return;
-    
-    if (e.key === 'Enter') {
-      checkGuess();
-    } else if (e.key === 'Backspace') {
-      if (currentTile > 0) {
-        currentTile--;
-        guesses[currentRow][currentTile] = '';
-        updateTile(currentRow, currentTile, '');
-      }
-    } else if (/^[a-zA-Z]$/.test(e.key) && currentTile < cols) {
-      guesses[currentRow][currentTile] = e.key.toUpperCase();
-      updateTile(currentRow, currentTile, e.key.toUpperCase());
-      currentTile++;
-    }
-  }
-
-  function updateTile(r, c, letter) {
-    const tile = document.getElementById(`tile-${r}-${c}`);
-    tile.innerText = letter;
-  }
-
-  function checkGuess() {
-    if (currentTile < cols) {
-      alert("Not enough letters");
-      return;
-    }
-
-    const guessString = guesses[currentRow].join('');
-    let targetArray = targetWord.split('');
-    let guessArray = guessString.split('');
-    
-    for (let i = 0; i < cols; i++) {
-      if (guessArray[i] === targetArray[i]) {
-        document.getElementById(`tile-${currentRow}-${i}`).classList.add('correct');
-        targetArray[i] = null;
-        guessArray[i] = null;
-      }
-    }
-    
-    for (let i = 0; i < cols; i++) {
-      if (guessArray[i] !== null) {
-        let index = targetArray.indexOf(guessArray[i]);
-        if (index > -1) {
-          document.getElementById(`tile-${currentRow}-${i}`).classList.add('present');
-          targetArray[index] = null;
-        } else {
-          document.getElementById(`tile-${currentRow}-${i}`).classList.add('absent');
-        }
-      }
-    }
-
-    if (guessString === targetWord) {
-      gameMessage.innerText = "Splendid! You guessed the word!";
-      document.getElementById('share-btn').style.display = 'block';
-      gameOver = true;
-    } else {
-      currentRow++;
-      currentTile = 0;
-      if (currentRow >= rows) {
-        gameMessage.innerText = `Game Over. The word was ${targetWord}.`;
-        gameOver = true;
-      }
-    }
-  }
-
-  function shareResult() {
-    let text = `Samson's Wordle ${gameOver && guesses[currentRow-1]?.join('') === targetWord ? currentRow : 'X'}/6\n\n`;
-    const finalRow = gameOver && guesses[currentRow-1]?.join('') === targetWord ? currentRow : currentRow;
-    for (let r = 0; r < finalRow; r++) {
-      for (let c = 0; c < cols; c++) {
-        const tile = document.getElementById(`tile-${r}-${c}`);
-        if (tile.classList.contains('correct')) text += '🟩';
-        else if (tile.classList.contains('present')) text += '🟨';
-        else text += '⬛';
-      }
-      text += '\n';
-    }
-    navigator.clipboard.writeText(text).then(() => {
-      alert("Result copied! You can now paste it in WhatsApp.");
-    });
-  }
+  alert("המשחק עלה! המילה מוגדרת בקוד.");
 </script>
 </body>
 </html>
