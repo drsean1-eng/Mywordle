@@ -17,28 +17,24 @@
 <body>
 <h1>SAMSON'S WORDLE</h1>
 <div class="board" id="b"></div>
-<div id="box">
-  <p id="msg">התוצאה שלך להיום:</p>
-  <textarea id="res" readonly></textarea>
-</div>
+<div id="box"><p>התוצאה להיום:</p><textarea id="res" readonly></textarea></div>
 <script>
-  // מילה יומית פשוטה לכולם
-  const word = "INBOX"; 
+  const word = "INBOX";
+  // מילון מילים קטן לדוגמה כדי שלא יכתבו שטויות
+  const validWords = ["APPLE", "INBOX", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE"];
+  
   let r = 0, t = 0, over = false, won = false;
-  let guesses = Array.from({length: 6}, () => Array(5).fill(''));
-
-  // בדיקת נעילה יומית
-  const today = new Date().toDateString();
-  if (localStorage.getItem('last_played') === today) {
-    over = true;
-    show();
-  }
+  // טעינת מצב משחק קודם אם קיים (מונע ריסטארט)
+  let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
+  let savedR = parseInt(localStorage.getItem('r')) || 0;
+  r = savedR;
 
   const board = document.getElementById('b');
   for (let i = 0; i < 6; i++) {
     let row = document.createElement('div'); row.className = 'row';
     for (let j = 0; j < 5; j++) {
       let tile = document.createElement('div'); tile.className = 'tile'; tile.id = `t-${i}-${j}`;
+      if (guesses[i][j]) tile.innerText = guesses[i][j];
       row.appendChild(tile);
     }
     board.appendChild(row);
@@ -51,15 +47,17 @@
     else if (t < 5) { guesses[r][t] = k; document.getElementById(`t-${r}-${t}`).innerText = k; t++; }
   }
 
-  // מקלדת
   let keysHtml = '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; width:98%; max-width:400px; margin-top:10px;">';
   "QWERTYUIOPASDFGHJKLZXCVBNM".split('').forEach(ch => { keysHtml += `<button onclick="press('${ch}')">${ch}</button>`; });
   keysHtml += `<button onclick="press('ENTER')">OK</button><button onclick="press('DEL')">⌫</button></div>`;
   document.body.innerHTML += keysHtml;
 
   function check() {
-    if (t < 5) return;
     let guess = guesses[r].join('');
+    if (guess.length < 5) return;
+    // בדיקה אם המילה קיימת במילון
+    if (!validWords.includes(guess)) { alert("Not a valid word!"); return; }
+
     let targetArr = word.split('');
     let guessArr = guess.split('');
     for (let i = 0; i < 5; i++) {
@@ -73,6 +71,8 @@
         if (idx > -1) { el.classList.add('p'); targetArr[idx] = null; } else { el.classList.add('a'); }
       }
     }
+    localStorage.setItem('guesses', JSON.stringify(guesses));
+    localStorage.setItem('r', r + 1);
     if (guess === word) { won = true; r++; finish(); } 
     else if (r === 5) { r++; finish(); } 
     else { r++; t = 0; }
@@ -80,7 +80,7 @@
 
   function finish() {
     over = true;
-    localStorage.setItem('last_played', today);
+    localStorage.setItem('last_played', new Date().toDateString());
     show();
   }
 
