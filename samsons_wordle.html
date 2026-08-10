@@ -23,28 +23,19 @@
 <div class="board" id="b"></div>
 <div id="box"><p>התוצאה להיום:</p><textarea id="res" readonly></textarea></div>
 <script>
-  const word = "INBOX"; // המילה היומית
+  const word = "INBOX"; // המילה היומית שלך
   
-  // מאגר פנימי ענק ועשיר של מילים אמיתיות (כולל NORTH, SNORE וכו')
-  const validWords = new Set([
-    "APPLE", "INBOX", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE",
-    "NORTH", "SOUTH", "EAGLE", "TIGER", "HOUSE", "MOUSE", "WATER", "GREEN", "BLACK", "WHITE",
-    "CHAIR", "TABLE", "SMART", "CLEAN", "MUSIC", "VOICE", "STONE", "PLANT", "TRAIN", "SLEEP",
-    "SMILE", "HAPPY", "MONEY", "BEACH", "TOWER", "RIVER", "BREAD", "FRUIT", "SUGAR", "PAPER",
-    "CLOUD", "STORM", "SHIRT", "SHOES", "WATCH", "PHONE", "GHOST", "HEART", "BLOOD", "SNORE",
-    "QUEEN", "KNIGHT", "PRINCE", "RULER", "MAGIC", "POWER", "SHARK", "WHALE", "TRAIN", "BROAD",
-    "CANDY", "DRIVE", "EARTH", "FIELD", "FIGHT", "FORCE", "GLASS", "GRAPE", "HORSE", "HOTEL",
-    "ISSUE", "JUDGE", "KNIFE", "LAUGH", "LEMON", "LIGHT", "LIVER", "LUNCH", "MOTOR", "MOUTH",
-    "MUSIC", "NIGHT", "NURSE", "OCEAN", "PAINT", "PEACE", "PIANO", "PILOT", "PITCH", "PLATE",
-    "PRIZE", "RADIO", "REACH", "RIVER", "ROBOT", "RUGBY", "SCALE", "SCENE", "SCOPE", "SCORE",
-    "SHARK", "SHEEP", "SHEET", "SHIFT", "SHIRT", "SHOCK", "SIGHT", "SKIRT", "SLEEP", "SMILE",
-    "SMOKE", "SOLID", "SOUND", "SOUTH", "SPACE", "SPEED", "SPICE", "SPOON", "SPORT", "STAGE",
-    "START", "STEAM", "STEEL", "STICK", "STORM", "STOVE", "STRIP", "SUGAR", "SWEET", "TASTE",
-    "TEACH", "TIGER", "TOOTH", "TOWER", "TRACK", "TRADE", "TRAIN", "TREAT", "TREND", "TRIAL",
-    "TRUST", "TRUTH", "UNCLE", "UNION", "UNITY", "VALUE", "VIDEO", "VISIT", "VOICE", "WASTE",
-    "WATCH", "WATER", "WHEEL", "WHITE", "WORLD", "WRITH", "WRONG", "YOUTH"
-  ]);
+  // טעינת המילון הרשמי המלא (מעל 12,000 מילים) דרך ענן יציב
+  let validWords = new Set([word, "SNORE", "NORTH", "APPLE", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE"]);
   
+  fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
+    .then(res => res.text())
+    .then(text => {
+      text.split('\n').forEach(w => {
+        if(w.trim()) validWords.add(w.trim().toUpperCase());
+      });
+    }).catch(e => console.log("Using default dictionary"));
+
   let r = 0, t = 0, over = false, won = false;
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
   let savedR = parseInt(localStorage.getItem('r')) || 0;
@@ -98,7 +89,7 @@
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
     
-    // בודק מול המאגר הפנימי
+    // בדיקה מול המילון המלא
     if (!validWords.has(guess)) {
       let err = document.getElementById('msg-err');
       err.style.display = 'block';
