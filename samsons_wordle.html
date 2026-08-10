@@ -12,19 +12,28 @@
   .c { background: #538d4e; } .p { background: #b59f3b; } .a { background: #3a3a3c; }
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
   textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; }
+  .message { color: #ff6b6b; font-weight: bold; height: 20px; margin-top: 5px; }
 </style>
 </head>
 <body>
 <h1>SAMSON'S WORDLE</h1>
+<div class="message" id="msg-err"></div>
 <div class="board" id="b"></div>
 <div id="box"><p>התוצאה להיום:</p><textarea id="res" readonly></textarea></div>
 <script>
-  const word = "QUOTA";
-  // מילון מילים קטן לדוגמה כדי שלא יכתבו שטויות
-  const validWords = ["APPLE", "INBOX", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE"];
+  const word = "INBOX"; // המילה היומית שלך
+
+  // מאגר רחב ועשיר של מילים נפוצות באנגלית
+  const validWords = [
+    "APPLE","INBOX","STARS","PARTY","DANCE","LIGHT","BRAIN","WORLD","SNARE","PLANE",
+    "NORTH","SOUTH","EAGLE","TIGER","HOUSE","MOUSE","WATER","GREEN","BLACK","WHITE",
+    "CHAIR","TABLE","SMART","CLEAN","MUSIC","VOICE","STONE","PLANT","TRAIN","SLEEP",
+    "SMILE","HAPPY","MONEY","BEACH","TOWER","RIVER","BREAD","FRUIT","SUGAR","PAPER",
+    "CLOUD","STORM","SHIRT","SHOES","WATCH","PHONE","LIGHT","GHOST","SMILE","HEART",
+    "BLOOD","BONEZ","TOWER","QUEEN","KINGS","KNIGHT","PRINCE","RULER","MAGIC","POWER"
+  ];
   
   let r = 0, t = 0, over = false, won = false;
-  // טעינת מצב משחק קודם אם קיים (מונע ריסטארט)
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
   let savedR = parseInt(localStorage.getItem('r')) || 0;
   r = savedR;
@@ -40,11 +49,32 @@
     board.appendChild(row);
   }
 
+  // שחזור הלוח אם השחקן יצא וחזר
+  for (let i = 0; i < r; i++) {
+    let guessStr = guesses[i].join('');
+    if (guessStr.length === 5) paintRow(i, guessStr);
+  }
+  if (savedR >= 6 || (r > 0 && guesses[r-1].join('') === word)) {
+    over = true;
+    show();
+  }
+
   function press(k) {
     if (over) return;
+    document.getElementById('msg-err').innerText = "";
     if (k === 'ENTER') check();
-    else if (k === 'DEL') { if (t > 0) { t--; guesses[r][t] = ''; document.getElementById(`t-${r}-${t}`).innerText = ''; } }
-    else if (t < 5) { guesses[r][t] = k; document.getElementById(`t-${r}-${t}`).innerText = k; t++; }
+    else if (k === 'DEL') { 
+      if (t > 0) { 
+        t--; 
+        guesses[r][t] = ''; 
+        document.getElementById(`t-${r}-${t}`).innerText = ''; 
+      } 
+    }
+    else if (t < 5) { 
+      guesses[r][t] = k; 
+      document.getElementById(`t-${r}-${t}`).innerText = k; 
+      t++; 
+    }
   }
 
   let keysHtml = '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; width:98%; max-width:400px; margin-top:10px;">';
@@ -55,27 +85,50 @@
   function check() {
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
-    // בדיקה אם המילה קיימת במילון
-    if (!validWords.includes(guess)) { alert("Not a valid word!"); return; }
+    
+    // בדיקה האם המילה קיימת במאגר המילים האמיתיות
+    if (!validWords.includes(guess)) {
+      document.getElementById('msg-err').innerText = "Not a valid word!";
+      return;
+    }
 
-    let targetArr = word.split('');
-    let guessArr = guess.split('');
-    for (let i = 0; i < 5; i++) {
-      let el = document.getElementById(`t-${r}-${i}`);
-      if (guessArr[i] === targetArr[i]) { el.classList.add('c'); targetArr[i] = null; guessArr[i] = null; }
-    }
-    for (let i = 0; i < 5; i++) {
-      if (guessArr[i] !== null) {
-        let el = document.getElementById(`t-${r}-${i}`);
-        let idx = targetArr.indexOf(guessArr[i]);
-        if (idx > -1) { el.classList.add('p'); targetArr[idx] = null; } else { el.classList.add('a'); }
-      }
-    }
+    paintRow(r, guess);
+    
     localStorage.setItem('guesses', JSON.stringify(guesses));
     localStorage.setItem('r', r + 1);
+    
     if (guess === word) { won = true; r++; finish(); } 
     else if (r === 5) { r++; finish(); } 
     else { r++; t = 0; }
+  }
+
+  function paintRow(rowIdx, guess) {
+    let targetArr = word.split('');
+    let guessArr = guess.split('');
+    let rowTiles = [];
+    
+    for (let i = 0; i < 5; i++) {
+      rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`));
+    }
+
+    for (let i = 0; i < 5; i++) {
+      if (guessArr[i] === targetArr[i]) { 
+        rowTiles[i].classList.add('c'); 
+        targetArr[i] = null; 
+        guessArr[i] = null; 
+      }
+    }
+    for (let i = 0; i < 5; i++) {
+      if (guessArr[i] !== null) {
+        let idx = targetArr.indexOf(guessArr[i]);
+        if (idx > -1) { 
+          rowTiles[i].classList.add('p'); 
+          targetArr[idx] = null; 
+        } else { 
+          rowTiles[i].classList.add('a'); 
+        }
+      }
+    }
   }
 
   function finish() {
