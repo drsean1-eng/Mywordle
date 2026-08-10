@@ -1,43 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wordle</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Samson's Wordle</title>
 <style>
-  body { 
-    background: #121213; 
-    color: white; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    font-family: sans-serif; 
-    margin: 0; 
-  }
-  .board { 
-    display: grid; 
-    grid-template-rows: repeat(6, 1fr); 
-    gap: 5px; 
-    margin: 10px 0; 
-  }
-  .row { 
-    display: grid; 
-    grid-template-columns: repeat(5, 1fr); 
-    gap: 5px; 
-  }
-  .tile { 
-    width: 50px; 
-    height: 50px; 
-    border: 2px solid #3a3a3c; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    font-size: 2rem; 
-    font-weight: bold; 
-  }
-  .c { background: #538d4e; }
-  .p { background: #b59f3b; }
-  .a { background: #3a3a3c; }
+  body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding-bottom: 20px; }
+  .board { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; margin: 10px 0; }
+  .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
+  .c { background: #538d4e; } .p { background: #b59f3b; } .a { background: #3a3a3c; }
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
   textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; }
 </style>
@@ -46,23 +18,27 @@
 <h1>SAMSON'S WORDLE</h1>
 <div class="board" id="b"></div>
 <div id="box">
-  <p>העתק את התוצאה לכאן:</p>
+  <p id="msg">התוצאה שלך להיום:</p>
   <textarea id="res" readonly></textarea>
 </div>
-
 <script>
-  const word = "INBOX";
+  // מילה יומית פשוטה לכולם
+  const word = "INBOX"; 
   let r = 0, t = 0, over = false, won = false;
   let guesses = Array.from({length: 6}, () => Array(5).fill(''));
 
+  // בדיקת נעילה יומית
+  const today = new Date().toDateString();
+  if (localStorage.getItem('last_played') === today) {
+    over = true;
+    show();
+  }
+
   const board = document.getElementById('b');
   for (let i = 0; i < 6; i++) {
-    let row = document.createElement('div');
-    row.className = 'row';
+    let row = document.createElement('div'); row.className = 'row';
     for (let j = 0; j < 5; j++) {
-      let tile = document.createElement('div');
-      tile.className = 'tile';
-      tile.id = `t-${i}-${j}`;
+      let tile = document.createElement('div'); tile.className = 'tile'; tile.id = `t-${i}-${j}`;
       row.appendChild(tile);
     }
     board.appendChild(row);
@@ -71,25 +47,14 @@
   function press(k) {
     if (over) return;
     if (k === 'ENTER') check();
-    else if (k === 'DEL') {
-      if (t > 0) {
-        t--;
-        guesses[r][t] = '';
-        document.getElementById(`t-${r}-${t}`).innerText = '';
-      }
-    } else if (t < 5) {
-      guesses[r][t] = k;
-      document.getElementById(`t-${r}-${t}`).innerText = k;
-      t++;
-    }
+    else if (k === 'DEL') { if (t > 0) { t--; guesses[r][t] = ''; document.getElementById(`t-${r}-${t}`).innerText = ''; } }
+    else if (t < 5) { guesses[r][t] = k; document.getElementById(`t-${r}-${t}`).innerText = k; t++; }
   }
 
+  // מקלדת
   let keysHtml = '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; width:98%; max-width:400px; margin-top:10px;">';
-  "QWERTYUIOPASDFGHJKLZXCVBNM".split('').forEach(ch => {
-    keysHtml += `<button style="padding:12px 0; font-weight:bold;" onclick="press('${ch}')">${ch}</button>`;
-  });
-  keysHtml += `<button style="grid-column: span 3; padding:10px;" onclick="press('ENTER')">ENTER</button>`;
-  keysHtml += `<button style="grid-column: span 3; padding:10px;" onclick="press('DEL')">⌫</button></div>`;
+  "QWERTYUIOPASDFGHJKLZXCVBNM".split('').forEach(ch => { keysHtml += `<button onclick="press('${ch}')">${ch}</button>`; });
+  keysHtml += `<button onclick="press('ENTER')">OK</button><button onclick="press('DEL')">⌫</button></div>`;
   document.body.innerHTML += keysHtml;
 
   function check() {
@@ -97,41 +62,26 @@
     let guess = guesses[r].join('');
     let targetArr = word.split('');
     let guessArr = guess.split('');
-
     for (let i = 0; i < 5; i++) {
       let el = document.getElementById(`t-${r}-${i}`);
-      if (guessArr[i] === targetArr[i]) {
-        el.classList.add('c');
-        targetArr[i] = null;
-        guessArr[i] = null;
-      }
+      if (guessArr[i] === targetArr[i]) { el.classList.add('c'); targetArr[i] = null; guessArr[i] = null; }
     }
     for (let i = 0; i < 5; i++) {
       if (guessArr[i] !== null) {
         let el = document.getElementById(`t-${r}-${i}`);
         let idx = targetArr.indexOf(guessArr[i]);
-        if (idx > -1) {
-          el.classList.add('p');
-          targetArr[idx] = null;
-        } else {
-          el.classList.add('a');
-        }
+        if (idx > -1) { el.classList.add('p'); targetArr[idx] = null; } else { el.classList.add('a'); }
       }
     }
+    if (guess === word) { won = true; r++; finish(); } 
+    else if (r === 5) { r++; finish(); } 
+    else { r++; t = 0; }
+  }
 
-    if (guess === word) {
-      over = true;
-      won = true;
-      r++;
-      show();
-    } else if (r === 5) {
-      over = true;
-      r++;
-      show();
-    } else {
-      r++;
-      t = 0;
-    }
+  function finish() {
+    over = true;
+    localStorage.setItem('last_played', today);
+    show();
   }
 
   function show() {
