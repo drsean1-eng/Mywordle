@@ -9,29 +9,29 @@
   .board { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; margin: 10px 0; }
   .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
   .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
-  .c { background: #538d4e; } .p { background: #b59f3b; } .a { background: #3a3a3c; }
+  .c { background: #538d4e; border-color: #538d4e;} 
+  .p { background: #b59f3b; border-color: #b59f3b;} 
+  .a { background: #3a3a3c; border-color: #3a3a3c;}
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
   textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; }
-  .message { color: #ff6b6b; font-weight: bold; height: 20px; margin-top: 5px; }
+  #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; }
 </style>
 </head>
 <body>
 <h1>SAMSON'S WORDLE</h1>
-<div class="message" id="msg-err"></div>
+<div id="msg-err">Not a valid word!</div>
 <div class="board" id="b"></div>
 <div id="box"><p>התוצאה להיום:</p><textarea id="res" readonly></textarea></div>
 <script>
-  const word = "INBOX"; // המילה היומית שלך
-
-  // מאגר רחב ועשיר של מילים נפוצות באנגלית
-  const validWords = [
-    "APPLE","INBOX","STARS","PARTY","DANCE","LIGHT","BRAIN","WORLD","SNARE","PLANE",
-    "NORTH","SOUTH","EAGLE","TIGER","HOUSE","MOUSE","WATER","GREEN","BLACK","WHITE",
-    "CHAIR","TABLE","SMART","CLEAN","MUSIC","VOICE","STONE","PLANT","TRAIN","SLEEP",
-    "SMILE","HAPPY","MONEY","BEACH","TOWER","RIVER","BREAD","FRUIT","SUGAR","PAPER",
-    "CLOUD","STORM","SHIRT","SHOES","WATCH","PHONE","LIGHT","GHOST","SMILE","HEART",
-    "BLOOD","BONEZ","TOWER","QUEEN","KINGS","KNIGHT","PRINCE","RULER","MAGIC","POWER"
-  ];
+  const word = "INBOX"; // המילה היומית שלכם
+  
+  // מייבאים את כל ה-12,000 מילים מהמאגר הרשמי באינטרנט
+  let validWords = new Set([word]);
+  fetch('https://raw.githubusercontent.com/tabatkins/wordle-list/main/words')
+    .then(res => res.text())
+    .then(text => {
+      text.split('\n').forEach(w => validWords.add(w.trim().toUpperCase()));
+    });
   
   let r = 0, t = 0, over = false, won = false;
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
@@ -49,7 +49,7 @@
     board.appendChild(row);
   }
 
-  // שחזור הלוח אם השחקן יצא וחזר
+  // שחזור הלוח והצבעים אם השחקן עשה ריסטארט
   for (let i = 0; i < r; i++) {
     let guessStr = guesses[i].join('');
     if (guessStr.length === 5) paintRow(i, guessStr);
@@ -61,7 +61,8 @@
 
   function press(k) {
     if (over) return;
-    document.getElementById('msg-err').innerText = "";
+    document.getElementById('msg-err').style.display = "none";
+    
     if (k === 'ENTER') check();
     else if (k === 'DEL') { 
       if (t > 0) { 
@@ -78,17 +79,19 @@
   }
 
   let keysHtml = '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; width:98%; max-width:400px; margin-top:10px;">';
-  "QWERTYUIOPASDFGHJKLZXCVBNM".split('').forEach(ch => { keysHtml += `<button onclick="press('${ch}')">${ch}</button>`; });
-  keysHtml += `<button onclick="press('ENTER')">OK</button><button onclick="press('DEL')">⌫</button></div>`;
+  "QWERTYUIOPASDFGHJKLZXCVBNM".split('').forEach(ch => { keysHtml += `<button style="padding:10px 0; font-weight:bold;" onclick="press('${ch}')">${ch}</button>`; });
+  keysHtml += `<button style="grid-column: span 3; font-weight:bold;" onclick="press('ENTER')">ENTER</button><button style="grid-column: span 3; font-weight:bold;" onclick="press('DEL')">⌫</button></div>`;
   document.body.innerHTML += keysHtml;
 
   function check() {
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
     
-    // בדיקה האם המילה קיימת במאגר המילים האמיתיות
-    if (!validWords.includes(guess)) {
-      document.getElementById('msg-err').innerText = "Not a valid word!";
+    // בודק מול המילון האינטרנטי האם המילה קיימת
+    if (validWords.size > 100 && !validWords.has(guess)) {
+      let err = document.getElementById('msg-err');
+      err.style.display = 'block';
+      setTimeout(() => err.style.display = 'none', 1500);
       return;
     }
 
