@@ -13,9 +13,9 @@
   .board { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; margin: 10px 0; }
   .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
   .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
-  .c { background: #538d4e; border-color: #538d4e;} 
-  .p { background: #b59f3b; border-color: #b59f3b;} 
-  .a { background: #3a3a3c; border-color: #3a3a3c;}
+  .c { background: #538d4e !important; border-color: #538d4e !important; color: white;} 
+  .p { background: #b59f3b !important; border-color: #b59f3b !important; color: white;} 
+  .a { background: #3a3a3c !important; border-color: #3a3a3c !important; color: white;}
   
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
   textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: none; }
@@ -24,7 +24,18 @@
   #share-btn { background: #538d4e; color: white; border: none; padding: 12px 24px; font-size: 1.2rem; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; max-width: 300px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 8px; }
   #share-btn:active { background: #43703e; }
 
-  /* עיצוב חלון הסטטיסטיקות */
+  /* עיצוב המקלדת והמקשים */
+  .keyboard { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 450px; margin-top: 10px; padding: 0 5px; box-sizing: border-box; }
+  .kb-row { display: flex; justify-content: center; gap: 4px; width: 100%; }
+  .kb-btn { background: #818384; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 1rem; padding: 14px 0; flex: 1; cursor: pointer; user-select: none; display: flex; justify-content: center; align-items: center; }
+  .kb-btn.wide { flex: 1.5; font-size: 0.85rem; }
+  
+  /* צבעי מקשים לפי סטטוס */
+  .kb-btn.c { background: #538d4e; }
+  .kb-btn.p { background: #b59f3b; }
+  .kb-btn.a { background: #3a3a3c; }
+
+  /* חלון קופץ סטטיסטיקות */
   #stats-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10; }
   .stats-content { background: #121213; border: 1px solid #3a3a3c; padding: 20px; border-radius: 8px; width: 90%; max-width: 350px; text-align: center; position: relative; }
   .close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
@@ -40,7 +51,7 @@
 </head>
 <body>
 <div class="header-container">
-  <div style="width: 24px;"></div> <!-- Spacer for centering -->
+  <div style="width: 24px;"></div>
   <h1>DR. SEAN'S WORDS</h1>
   <button class="icon-btn" onclick="openStats()">📊</button>
 </div>
@@ -52,7 +63,6 @@
   <button id="share-btn" onclick="shareResult()">Share 📤</button>
 </div>
 
-<!-- חלון קופץ של סטטיסטיקות -->
 <div id="stats-modal">
   <div class="stats-content">
     <button class="close-btn" onclick="closeStats()">×</button>
@@ -71,12 +81,10 @@
 <script>
   const word = "EDIFY"; // <--- המילה היומית
   
-  // הגדרת סטטיסטיקות
   let stats = JSON.parse(localStorage.getItem('wordle_stats')) || {
     played: 0, wins: 0, currentStreak: 0, maxStreak: 0, dist: [0,0,0,0,0,0]
   };
   
-  // איפוס חכם - מנקה לוח למילה חדשה אבל שומר סטטיסטיקות
   if (localStorage.getItem('current_word') !== word) {
     localStorage.removeItem('guesses');
     localStorage.removeItem('r');
@@ -95,6 +103,9 @@
   let savedR = parseInt(localStorage.getItem('r')) || 0;
   r = savedR;
 
+  // מעקב אחר מצב האותיות במקלדת ('c' ירוק, 'p' צהוב, 'a' אפור)
+  let letterStates = JSON.parse(localStorage.getItem('letter_states')) || {};
+
   const board = document.getElementById('b');
   for (let i = 0; i < 6; i++) {
     let row = document.createElement('div'); row.className = 'row';
@@ -106,10 +117,50 @@
     board.appendChild(row);
   }
 
+  // בניית מקלדת ויזואלית
+  const kbLayout = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+  let kbContainer = document.createElement('div');
+  kbContainer.className = 'keyboard';
+  
+  kbLayout.forEach((rowStr, idx) => {
+    let kbRow = document.createElement('div');
+    kbRow.className = 'kb-row';
+    if (idx === 2) {
+      let enterBtn = document.createElement('button3'); // temporary helper
+      // נבנה בצורה מסודרת
+    }
+    rowStr.split('').forEach(ch => {
+      let btn = document.createElement('button');
+      btn.className = 'kb-btn';
+      btn.id = `kb-${ch}`;
+      btn.innerText = ch;
+      btn.onclick = () => press(ch);
+      kbRow.appendChild(btn);
+    });
+    if (idx === 2) {
+      let enterBtn = document.createElement('button');
+      enterBtn.className = 'kb-btn wide';
+      enterBtn.innerText = 'ENTER';
+      enterBtn.onclick = () => press('ENTER');
+      kbRow.prepend(enterBtn);
+      
+      let delBtn = document.createElement('button');
+      delBtn.className = 'kb-btn wide';
+      delBtn.innerText = '⌫';
+      delBtn.onclick = () => press('DEL');
+      kbRow.append(delBtn);
+    }
+    kbContainer.appendChild(kbRow);
+  });
+  document.body.appendChild(kbContainer);
+
+  // צביעת שורות קודמות ועדכון מקלדת בטעינה
   for (let i = 0; i < r; i++) {
     let guessStr = guesses[i].join('');
-    if (guessStr.length === 5) paintRow(i, guessStr);
+    if (guessStr.length === 5) paintRow(i, guessStr, false);
   }
+  updateKeyboardColors();
+
   if (savedR >= 6 || (r > 0 && guesses[r-1].join('') === word)) {
     over = true;
     show();
@@ -126,11 +177,6 @@
     else if (t < 5) { guesses[r][t] = k; document.getElementById(`t-${r}-${t}`).innerText = k; t++; }
   }
 
-  let keysHtml = '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; width:98%; max-width:400px; margin-top:10px;">';
-  "QWERTYUIOPASDFGHJKLZXCVBNM".split('').forEach(ch => { keysHtml += `<button style="padding:10px 0; font-weight:bold;" onclick="press('${ch}')">${ch}</button>`; });
-  keysHtml += `<button style="grid-column: span 3; font-weight:bold;" onclick="press('ENTER')">ENTER</button><button style="grid-column: span 3; font-weight:bold;" onclick="press('DEL')">⌫</button></div>`;
-  document.body.innerHTML += keysHtml;
-
   function check() {
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
@@ -142,37 +188,73 @@
       return;
     }
 
-    paintRow(r, guess);
+    paintRow(r, guess, true);
     localStorage.setItem('guesses', JSON.stringify(guesses));
     localStorage.setItem('r', r + 1);
+    localStorage.setItem('letter_states', JSON.stringify(letterStates));
+    updateKeyboardColors();
     
     if (guess === word) { won = true; r++; finish(); } 
     else if (r === 5) { r++; finish(); } 
     else { r++; t = 0; }
   }
 
-  function paintRow(rowIdx, guess) {
+  function paintRow(rowIdx, guess, updateStates) {
     let targetArr = word.split('');
     let guessArr = guess.split('');
     let rowTiles = [];
+    let rowColors = Array(5).fill('a');
     
     for (let i = 0; i < 5; i++) { rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`)); }
+
+    // בדיקת ירוקים
     for (let i = 0; i < 5; i++) {
-      if (guessArr[i] === targetArr[i]) { rowTiles[i].classList.add('c'); targetArr[i] = null; guessArr[i] = null; }
+      if (guessArr[i] === targetArr[i]) { 
+        rowTiles[i].classList.add('c'); 
+        rowColors[i] = 'c';
+        targetArr[i] = null; 
+        guessArr[i] = null; 
+      }
     }
+    // בדיקת צהובים ואפורים
     for (let i = 0; i < 5; i++) {
       if (guessArr[i] !== null) {
         let idx = targetArr.indexOf(guessArr[i]);
-        if (idx > -1) { rowTiles[i].classList.add('p'); targetArr[idx] = null; } 
-        else { rowTiles[i].classList.add('a'); }
+        if (idx > -1) { 
+          rowTiles[i].classList.add('p'); 
+          rowColors[i] = 'p';
+          targetArr[idx] = null; 
+        } else { 
+          rowTiles[i].classList.add('a'); 
+          rowColors[i] = 'a';
+        }
+      }
+    }
+
+    // עדכון סטטוס המקלדת (עדיפות לירוק על פני צהוב, ולצהוב על פני אפור)
+    if (updateStates) {
+      for (let i = 0; i < 5; i++) {
+        let ch = guess[i];
+        let col = rowColors[i];
+        if (letterStates[ch] === 'c') continue;
+        if (letterStates[ch] === 'p' && col === 'a') continue;
+        letterStates[ch] = col;
+      }
+    }
+  }
+
+  function updateKeyboardColors() {
+    for (let ch in letterStates) {
+      let btn = document.getElementById(`kb-${ch}`);
+      if (btn) {
+        btn.classList.remove('c', 'p', 'a');
+        btn.classList.add(letterStates[ch]);
       }
     }
   }
 
   function finish() {
     over = true;
-    
-    // עדכון סטטיסטיקות רק אם המילה עדיין לא הושלמה בעבר
     if (localStorage.getItem('word_completed') !== word) {
       stats.played++;
       if (won) {
@@ -187,7 +269,7 @@
       localStorage.setItem('word_completed', word);
     }
     show();
-    setTimeout(openStats, 1500); // פותח את הסטטיסטיקות אוטומטית שנייה וחצי אחרי סיום המשחק
+    setTimeout(openStats, 1500);
   }
 
   function show() {
@@ -214,7 +296,6 @@
     }
   }
 
-  // פונקציות לתצוגת הסטטיסטיקות
   function openStats() {
     document.getElementById('st-played').innerText = stats.played;
     document.getElementById('st-win').innerText = stats.played > 0 ? Math.round((stats.wins / stats.played) * 100) : 0;
@@ -222,7 +303,7 @@
     document.getElementById('st-max').innerText = stats.maxStreak;
     
     let distHtml = "";
-    let maxDist = Math.max(...stats.dist, 1); // למניעת חלוקה באפס
+    let maxDist = Math.max(...stats.dist, 1);
     for (let i = 0; i < 6; i++) {
       let w = Math.max(7, Math.round((stats.dist[i] / maxDist) * 100));
       let highlight = (won && (i === r - 1)) ? 'highlight' : '';
