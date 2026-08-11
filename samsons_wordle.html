@@ -3,52 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Samson's Wordle</title>
+<title>Dr. Sean's Words</title>
 <style>
   body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding-bottom: 20px; }
+  .header-container { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
+  h1 { font-size: 1.8rem; margin: 15px 0; text-align: center; flex-grow: 1; }
+  .icon-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+  
   .board { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; margin: 10px 0; }
   .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
   .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
   .c { background: #538d4e; border-color: #538d4e;} 
   .p { background: #b59f3b; border-color: #b59f3b;} 
   .a { background: #3a3a3c; border-color: #3a3a3c;}
+  
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
   textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: none; }
   #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; }
   
-  /* עיצוב לכפתור השיתוף החדש */
   #share-btn { background: #538d4e; color: white; border: none; padding: 12px 24px; font-size: 1.2rem; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; max-width: 300px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 8px; }
   #share-btn:active { background: #43703e; }
+
+  /* עיצוב חלון הסטטיסטיקות */
+  #stats-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10; }
+  .stats-content { background: #121213; border: 1px solid #3a3a3c; padding: 20px; border-radius: 8px; width: 90%; max-width: 350px; text-align: center; position: relative; }
+  .close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+  .stats-grid { display: flex; justify-content: space-around; margin: 20px 0; }
+  .stat-box { display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; }
+  .stat-val { font-size: 1.8rem; font-weight: bold; }
+  #st-dist { text-align: left; font-family: sans-serif; margin-top: 20px; font-size: 0.9rem; }
+  .dist-row { display: flex; align-items: center; margin-bottom: 5px; }
+  .dist-num { width: 15px; }
+  .dist-bar { background: #3a3a3c; color: white; padding: 2px 5px; text-align: right; min-width: 10px; font-weight: bold; }
+  .dist-bar.highlight { background: #538d4e; }
 </style>
 </head>
 <body>
-<h1>SAMSON'S WORDLE</h1>
+<div class="header-container">
+  <div style="width: 24px;"></div> <!-- Spacer for centering -->
+  <h1>DR. SEAN'S WORDS</h1>
+  <button class="icon-btn" onclick="openStats()">📊</button>
+</div>
+
 <div id="msg-err">Not a valid word!</div>
 <div class="board" id="b"></div>
 <div id="box">
   <textarea id="res" readonly></textarea>
-  <button id="share-btn" onclick="shareResult()">שתף תוצאה 📤</button>
+  <button id="share-btn" onclick="shareResult()">Share 📤</button>
 </div>
+
+<!-- חלון קופץ של סטטיסטיקות -->
+<div id="stats-modal">
+  <div class="stats-content">
+    <button class="close-btn" onclick="closeStats()">×</button>
+    <h2 style="margin-top:0;">STATISTICS</h2>
+    <div class="stats-grid">
+      <div class="stat-box"><span class="stat-val" id="st-played">0</span><span>Played</span></div>
+      <div class="stat-box"><span class="stat-val" id="st-win">0</span><span>Win %</span></div>
+      <div class="stat-box"><span class="stat-val" id="st-streak">0</span><span>Current<br>Streak</span></div>
+      <div class="stat-box"><span class="stat-val" id="st-max">0</span><span>Max<br>Streak</span></div>
+    </div>
+    <h3 style="margin-bottom: 5px; font-size: 1rem; text-align: left;">GUESS DISTRIBUTION</h3>
+    <div id="st-dist"></div>
+  </div>
+</div>
+
 <script>
-  const word = "EDIFY"; // <--- המילה היומית
+  const word = "HELLO"; // <--- המילה היומית
   
-  // איפוס חכם
+  // הגדרת סטטיסטיקות
+  let stats = JSON.parse(localStorage.getItem('wordle_stats')) || {
+    played: 0, wins: 0, currentStreak: 0, maxStreak: 0, dist: [0,0,0,0,0,0]
+  };
+  
+  // איפוס חכם - מנקה לוח למילה חדשה אבל שומר סטטיסטיקות
   if (localStorage.getItem('current_word') !== word) {
     localStorage.removeItem('guesses');
     localStorage.removeItem('r');
+    localStorage.removeItem('word_completed');
     localStorage.setItem('current_word', word);
   }
 
-  // טעינת המילון
   let validWords = new Set([word, "SNORE", "NORTH", "APPLE", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE"]);
-  
   fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
     .then(res => res.text())
-    .then(text => {
-      text.split('\n').forEach(w => {
-        if(w.trim()) validWords.add(w.trim().toUpperCase());
-      });
-    }).catch(e => console.log("Using default dictionary"));
+    .then(text => { text.split('\n').forEach(w => { if(w.trim()) validWords.add(w.trim().toUpperCase()); }); })
+    .catch(e => console.log("Using default dictionary"));
 
   let r = 0, t = 0, over = false, won = false;
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
@@ -81,17 +121,9 @@
     
     if (k === 'ENTER') check();
     else if (k === 'DEL') { 
-      if (t > 0) { 
-        t--; 
-        guesses[r][t] = ''; 
-        document.getElementById(`t-${r}-${t}`).innerText = ''; 
-      } 
+      if (t > 0) { t--; guesses[r][t] = ''; document.getElementById(`t-${r}-${t}`).innerText = ''; } 
     }
-    else if (t < 5) { 
-      guesses[r][t] = k; 
-      document.getElementById(`t-${r}-${t}`).innerText = k; 
-      t++; 
-    }
+    else if (t < 5) { guesses[r][t] = k; document.getElementById(`t-${r}-${t}`).innerText = k; t++; }
   }
 
   let keysHtml = '<div style="display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; width:98%; max-width:400px; margin-top:10px;">';
@@ -111,7 +143,6 @@
     }
 
     paintRow(r, guess);
-    
     localStorage.setItem('guesses', JSON.stringify(guesses));
     localStorage.setItem('r', r + 1);
     
@@ -125,38 +156,43 @@
     let guessArr = guess.split('');
     let rowTiles = [];
     
+    for (let i = 0; i < 5; i++) { rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`)); }
     for (let i = 0; i < 5; i++) {
-      rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`));
-    }
-
-    for (let i = 0; i < 5; i++) {
-      if (guessArr[i] === targetArr[i]) { 
-        rowTiles[i].classList.add('c'); 
-        targetArr[i] = null; 
-        guessArr[i] = null; 
-      }
+      if (guessArr[i] === targetArr[i]) { rowTiles[i].classList.add('c'); targetArr[i] = null; guessArr[i] = null; }
     }
     for (let i = 0; i < 5; i++) {
       if (guessArr[i] !== null) {
         let idx = targetArr.indexOf(guessArr[i]);
-        if (idx > -1) { 
-          rowTiles[i].classList.add('p'); 
-          targetArr[idx] = null; 
-        } else { 
-          rowTiles[i].classList.add('a'); 
-        }
+        if (idx > -1) { rowTiles[i].classList.add('p'); targetArr[idx] = null; } 
+        else { rowTiles[i].classList.add('a'); }
       }
     }
   }
 
   function finish() {
     over = true;
+    
+    // עדכון סטטיסטיקות רק אם המילה עדיין לא הושלמה בעבר
+    if (localStorage.getItem('word_completed') !== word) {
+      stats.played++;
+      if (won) {
+        stats.wins++;
+        stats.currentStreak++;
+        if (stats.currentStreak > stats.maxStreak) stats.maxStreak = stats.currentStreak;
+        stats.dist[r-1]++;
+      } else {
+        stats.currentStreak = 0;
+      }
+      localStorage.setItem('wordle_stats', JSON.stringify(stats));
+      localStorage.setItem('word_completed', word);
+    }
     show();
+    setTimeout(openStats, 1500); // פותח את הסטטיסטיקות אוטומטית שנייה וחצי אחרי סיום המשחק
   }
 
   function show() {
     document.getElementById('box').style.display = 'block';
-    let text = `Samson's Wordle ${won ? r : 'X'}/6\n\n`;
+    let text = `Dr. Sean's Words ${won ? r : 'X'}/6\n\n`;
     for (let i = 0; i < r; i++) {
       for (let j = 0; j < 5; j++) {
         let el = document.getElementById(`t-${i}-${j}`);
@@ -169,20 +205,33 @@
     document.getElementById('res').value = text;
   }
 
-  // פונקציית השיתוף החדשה
   function shareResult() {
     const text = document.getElementById('res').value;
     if (navigator.share) {
-      navigator.share({
-        title: "Samson's Wordle",
-        text: text
-      }).catch(console.error);
+      navigator.share({ title: "Dr. Sean's Words", text: text }).catch(console.error);
     } else {
-      navigator.clipboard.writeText(text).then(() => {
-        alert("התוצאה הועתקה ללוח! עכשיו אפשר להדביק אותה איפה שתרצה.");
-      });
+      navigator.clipboard.writeText(text).then(() => { alert("Copied to clipboard!"); });
     }
   }
+
+  // פונקציות לתצוגת הסטטיסטיקות
+  function openStats() {
+    document.getElementById('st-played').innerText = stats.played;
+    document.getElementById('st-win').innerText = stats.played > 0 ? Math.round((stats.wins / stats.played) * 100) : 0;
+    document.getElementById('st-streak').innerText = stats.currentStreak;
+    document.getElementById('st-max').innerText = stats.maxStreak;
+    
+    let distHtml = "";
+    let maxDist = Math.max(...stats.dist, 1); // למניעת חלוקה באפס
+    for (let i = 0; i < 6; i++) {
+      let w = Math.max(7, Math.round((stats.dist[i] / maxDist) * 100));
+      let highlight = (won && (i === r - 1)) ? 'highlight' : '';
+      distHtml += `<div class="dist-row"><div class="dist-num">${i+1}</div><div class="dist-bar ${highlight}" style="width: ${w}%;">${stats.dist[i]}</div></div>`;
+    }
+    document.getElementById('st-dist').innerHTML = distHtml;
+    document.getElementById('stats-modal').style.display = 'flex';
+  }
+  function closeStats() { document.getElementById('stats-modal').style.display = 'none'; }
 </script>
 </body>
 </html>
