@@ -23,9 +23,16 @@
 <div class="board" id="b"></div>
 <div id="box"><p>התוצאה להיום:</p><textarea id="res" readonly></textarea></div>
 <script>
-  const word = "EDIFY"; // המילה היומית שלך
+  const word = "HELLO"; // <--- שנה את זה למילה החדשה שלך להיום
   
-  // טעינת המילון הרשמי המלא (מעל 12,000 מילים) דרך ענן יציב
+  // מנגנון איפוס חכם: בודק אם המילה הוחלפה, ואם כן - מנקה את הלוח
+  if (localStorage.getItem('current_word') !== word) {
+    localStorage.removeItem('guesses');
+    localStorage.removeItem('r');
+    localStorage.setItem('current_word', word);
+  }
+
+  // טעינת המילון הרשמי המלא (מעל 12,000 מילים)
   let validWords = new Set([word, "SNORE", "NORTH", "APPLE", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE"]);
   
   fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
@@ -89,7 +96,6 @@
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
     
-    // בדיקה מול המילון המלא
     if (!validWords.has(guess)) {
       let err = document.getElementById('msg-err');
       err.style.display = 'block';
@@ -138,7 +144,6 @@
 
   function finish() {
     over = true;
-    localStorage.setItem('last_played', new Date().toDateString());
     show();
   }
 
