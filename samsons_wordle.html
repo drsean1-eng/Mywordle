@@ -13,26 +13,33 @@
   .p { background: #b59f3b; border-color: #b59f3b;} 
   .a { background: #3a3a3c; border-color: #3a3a3c;}
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
-  textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; }
+  textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: none; }
   #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; }
+  
+  /* עיצוב לכפתור השיתוף החדש */
+  #share-btn { background: #538d4e; color: white; border: none; padding: 12px 24px; font-size: 1.2rem; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; max-width: 300px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 8px; }
+  #share-btn:active { background: #43703e; }
 </style>
 </head>
 <body>
 <h1>SAMSON'S WORDLE</h1>
 <div id="msg-err">Not a valid word!</div>
 <div class="board" id="b"></div>
-<div id="box"><p>התוצאה להיום:</p><textarea id="res" readonly></textarea></div>
+<div id="box">
+  <textarea id="res" readonly></textarea>
+  <button id="share-btn" onclick="shareResult()">שתף תוצאה 📤</button>
+</div>
 <script>
-  const word = "EDIFY"; // <--- שנה את זה למילה החדשה שלך להיום
+  const word = "HELLO"; // <--- המילה היומית
   
-  // מנגנון איפוס חכם: בודק אם המילה הוחלפה, ואם כן - מנקה את הלוח
+  // איפוס חכם
   if (localStorage.getItem('current_word') !== word) {
     localStorage.removeItem('guesses');
     localStorage.removeItem('r');
     localStorage.setItem('current_word', word);
   }
 
-  // טעינת המילון הרשמי המלא (מעל 12,000 מילים)
+  // טעינת המילון
   let validWords = new Set([word, "SNORE", "NORTH", "APPLE", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE"]);
   
   fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
@@ -160,6 +167,21 @@
       text += '\n';
     }
     document.getElementById('res').value = text;
+  }
+
+  // פונקציית השיתוף החדשה
+  function shareResult() {
+    const text = document.getElementById('res').value;
+    if (navigator.share) {
+      navigator.share({
+        title: "Samson's Wordle",
+        text: text
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("התוצאה הועתקה ללוח! עכשיו אפשר להדביק אותה איפה שתרצה.");
+      });
+    }
   }
 </script>
 </body>
