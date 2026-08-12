@@ -88,8 +88,8 @@
   const weeklySchedule = {
     "2026-08-12": "EDIFY",
     "2026-08-13": "STERN",
-    "2026-08-14": "TRAIN",
-    "2026-08-15": "PLANT",
+    "2026-08-14": "ONION",
+    "2026-08-15": "FLUFF",
     "2026-08-16": "BEACH",
     "2026-08-17": "MUSIC",
     "2026-08-18": "BOOKS"
@@ -160,8 +160,12 @@
   });
   document.body.appendChild(kbContainer);
 
+  // טעינה וצביעה מדויקת של כל השורות שכבר נעשו לפי האינדקסים האמיתיים שלהן
   for (let i = 0; i < r; i++) {
-    paintRow(i, guesses[i].join(''), false);
+    let savedGuessStr = guesses[i].join('');
+    if (savedGuessStr.length === 5) {
+      paintRow(i, savedGuessStr, false);
+    }
   }
   updateKeyboardColors();
   if (over) show();
@@ -169,26 +173,83 @@
   function press(k) {
     if (over) return;
     if (k === 'ENTER') check();
-    else if (k === 'DEL') { if (guesses[r].join('').length > 0) { let t = guesses[r].lastIndexOf(guesses[r].find(x => x !== '')); t = guesses[r].indexOf(''); t = t === -1 ? 4 : t - 1; if(t<0)t=0; guesses[r][t] = ''; document.getElementById(`t-${r}-${t}`).innerText = ''; } }
-    else { let t = guesses[r].indexOf(''); if (t !== -1) { guesses[r][t] = k; document.getElementById(`t-${r}-${t}`).innerText = k; } }
+    else if (k === 'DEL') { 
+      let activeRowGuesses = guesses[r];
+      let lastFilledIdx = -1;
+      for (let j = 0; j < 5; j++) { if (activeRowGuesses[j] !== '') lastFilledIdx = j; }
+      if (lastFilledIdx !== -1) {
+        activeRowGuesses[lastFilledIdx] = '';
+        document.getElementById(`t-${r}-${lastFilledIdx}`).innerText = '';
+      }
+    }
+    else { 
+      let activeRowGuesses = guesses[r];
+      let firstEmptyIdx = activeRowGuesses.indexOf('');
+      if (firstEmptyIdx !== -1) {
+        activeRowGuesses[firstEmptyIdx] = k;
+        document.getElementById(`t-${r}-${firstEmptyIdx}`).innerText = k;
+      }
+    }
   }
 
   function check() {
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
+    
     paintRow(r, guess, true);
-    if (guess === word) { won = true; finish(); }
-    else { r++; localStorage.setItem('r', r); if (r >= 6) finish(); }
+    
+    if (guess === word) { won = true; }
+    
+    localStorage.setItem('guesses', JSON.stringify(guesses));
+    r++;
+    localStorage.setItem('r', r);
+    localStorage.setItem('letter_states', JSON.stringify(letterStates));
+    updateKeyboardColors();
+    
+    if (won || r >= 6) { 
+      finish(); 
+    }
   }
 
   function paintRow(rowIdx, guess, updateStates) {
     let targetArr = word.split('');
+    let guessArr = guess.split('');
     let rowTiles = [];
+    let rowColors = Array(5).fill('a');
+    
     for (let i = 0; i < 5; i++) rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`));
-    for (let i = 0; i < 5; i++) if (guess[i] === targetArr[i]) { rowTiles[i].classList.add('c'); letterStates[guess[i]] = 'c'; targetArr[i] = null; }
-    for (let i = 0; i < 5; i++) if (rowTiles[i].innerText !== "" && !rowTiles[i].classList.contains('c')) { let idx = targetArr.indexOf(guess[i]); if (idx > -1) { rowTiles[i].classList.add('p'); if(letterStates[guess[i]] !== 'c') letterStates[guess[i]] = 'p'; targetArr[idx] = null; } else { rowTiles[i].classList.add('a'); if(!letterStates[guess[i]]) letterStates[guess[i]] = 'a'; } }
-    localStorage.setItem('letter_states', JSON.stringify(letterStates));
-    updateKeyboardColors();
+    
+    for (let i = 0; i < 5; i++) {
+      if (guessArr[i] === targetArr[i]) { 
+        rowTiles[i].classList.add('c'); 
+        rowColors[i] = 'c';
+        targetArr[i] = null; 
+        guessArr[i] = null; 
+      }
+    }
+    for (let i = 0; i < 5; i++) {
+      if (guessArr[i] !== null) {
+        let idx = targetArr.indexOf(guessArr[i]);
+        if (idx > -1) { 
+          rowTiles[i].classList.add('p'); 
+          rowColors[i] = 'p';
+          targetArr[idx] = null; 
+        } else { 
+          rowTiles[i].classList.add('a'); 
+          rowColors[i] = 'a';
+        }
+      }
+    }
+
+    if (updateStates) {
+      for (let i = 0; i < 5; i++) {
+        let ch = guess[i];
+        let col = rowColors[i];
+        if (letterStates[ch] === 'c') continue;
+        if (letterStates[ch] === 'p' && col === 'a') continue;
+        letterStates[ch] = col;
+      }
+    }
   }
 
   function updateKeyboardColors() {
@@ -202,7 +263,7 @@
     over = true;
     if (localStorage.getItem('word_completed') !== word) {
       stats.played++;
-      if (won) { stats.wins++; stats.currentStreak++; stats.dist[r] = (stats.dist[r] || 0) + 1; }
+      if (won) { stats.wins++; stats.currentStreak++; stats.dist[r-1] = (stats.dist[r-1] || 0) + 1; }
       else stats.currentStreak = 0;
       localStorage.setItem('wordle_stats', JSON.stringify(stats));
       localStorage.setItem('word_completed', word);
@@ -212,7 +273,7 @@
 
   function show() {
     document.getElementById('box').style.display = 'block';
-    let text = `Dr. Sean's Words ${won ? (r+1) : 'X'}/6\n\n`;
+    let text = `Dr. Sean's Words ${won ? r : 'X'}/6\n\n`;
     document.getElementById('res').value = text;
   }
   function shareResult() { navigator.clipboard.writeText(document.getElementById('res').value).then(() => alert("Copied!")); }
