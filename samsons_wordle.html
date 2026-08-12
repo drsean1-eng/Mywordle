@@ -88,8 +88,8 @@
   const weeklySchedule = {
     "2026-08-12": "EDIFY",
     "2026-08-13": "STERN",
-    "2026-08-14": "ONION",
-    "2026-08-15": "FLUFF",
+    "2026-08-14": "TRAIN",
+    "2026-08-15": "PLANT",
     "2026-08-16": "BEACH",
     "2026-08-17": "MUSIC",
     "2026-08-18": "BOOKS"
@@ -115,6 +115,15 @@
 
   let r = parseInt(localStorage.getItem('r')) || 0;
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
+  
+  // מנגנון הגנה: אם הנתונים בזיכרון נפגמו ולא מערך תקין, נאפס אותם כדי למנוע שורות משובשות
+  if (!Array.isArray(guesses) || guesses.length !== 6) {
+    guesses = Array.from({length: 6}, () => Array(5).fill(''));
+    r = 0;
+    localStorage.setItem('guesses', JSON.stringify(guesses));
+    localStorage.setItem('r', r);
+  }
+
   let won = (localStorage.getItem('word_completed') === word);
   let over = (r >= 6 || won);
   let letterStates = JSON.parse(localStorage.getItem('letter_states')) || {};
@@ -124,7 +133,6 @@
     let row = document.createElement('div'); row.className = 'row';
     for (let j = 0; j < 5; j++) {
       let tile = document.createElement('div'); tile.className = 'tile'; tile.id = `t-${i}-${j}`;
-      if (guesses[i][j]) tile.innerText = guesses[i][j];
       row.appendChild(tile);
     }
     board.appendChild(row);
@@ -160,11 +168,17 @@
   });
   document.body.appendChild(kbContainer);
 
-  // טעינה וצביעה מדויקת של כל השורות שכבר נעשו לפי האינדקסים האמיתיים שלהן
-  for (let i = 0; i < r; i++) {
-    let savedGuessStr = guesses[i].join('');
-    if (savedGuessStr.length === 5) {
-      paintRow(i, savedGuessStr, false);
+  // שחזור מלא ומדויק של הלוח מהזיכרון השמור
+  for (let i = 0; i < 6; i++) {
+    let guessStr = guesses[i].join('');
+    if (guessStr.length === 5) {
+      paintRow(i, guessStr, false);
+    } else {
+      for (let j = 0; j < 5; j++) {
+        if (guesses[i][j]) {
+          document.getElementById(`t-${i}-${j}`).innerText = guesses[i][j];
+        }
+      }
     }
   }
   updateKeyboardColors();
@@ -172,22 +186,27 @@
 
   function press(k) {
     if (over) return;
-    if (k === 'ENTER') check();
-    else if (k === 'DEL') { 
-      let activeRowGuesses = guesses[r];
-      let lastFilledIdx = -1;
-      for (let j = 0; j < 5; j++) { if (activeRowGuesses[j] !== '') lastFilledIdx = j; }
-      if (lastFilledIdx !== -1) {
-        activeRowGuesses[lastFilledIdx] = '';
-        document.getElementById(`t-${r}-${lastFilledIdx}`).innerText = '';
+    document.getElementById('msg-err').style.display = "none";
+
+    if (k === 'ENTER') {
+      check();
+    } else if (k === 'DEL') {
+      let rowG = guesses[r];
+      for (let j = 4; j >= 0; j--) {
+        if (rowG[j] !== '') {
+          rowG[j] = '';
+          document.getElementById(`t-${r}-${j}`).innerText = '';
+          break;
+        }
       }
-    }
-    else { 
-      let activeRowGuesses = guesses[r];
-      let firstEmptyIdx = activeRowGuesses.indexOf('');
-      if (firstEmptyIdx !== -1) {
-        activeRowGuesses[firstEmptyIdx] = k;
-        document.getElementById(`t-${r}-${firstEmptyIdx}`).innerText = k;
+    } else {
+      let rowG = guesses[r];
+      for (let j = 0; j < 5; j++) {
+        if (rowG[j] === '') {
+          rowG[j] = k;
+          document.getElementById(`t-${r}-${j}`).innerText = k;
+          break;
+        }
       }
     }
   }
@@ -195,19 +214,21 @@
   function check() {
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
-    
+
     paintRow(r, guess, true);
-    
-    if (guess === word) { won = true; }
-    
+
+    if (guess === word) {
+      won = true;
+    }
+
     localStorage.setItem('guesses', JSON.stringify(guesses));
     r++;
     localStorage.setItem('r', r);
     localStorage.setItem('letter_states', JSON.stringify(letterStates));
     updateKeyboardColors();
-    
-    if (won || r >= 6) { 
-      finish(); 
+
+    if (won || r >= 6) {
+      finish();
     }
   }
 
@@ -220,6 +241,7 @@
     for (let i = 0; i < 5; i++) rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`));
     
     for (let i = 0; i < 5; i++) {
+      rowTiles[i].innerText = guess[i];
       if (guessArr[i] === targetArr[i]) { 
         rowTiles[i].classList.add('c'); 
         rowColors[i] = 'c';
