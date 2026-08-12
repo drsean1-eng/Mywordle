@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Dr. Sean's Words</title>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+
 <style>
   body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding-bottom: 20px; }
   .header-container { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
@@ -22,20 +32,16 @@
   #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; }
   
   #share-btn { background: #538d4e; color: white; border: none; padding: 12px 24px; font-size: 1.2rem; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; max-width: 300px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 8px; }
-  #share-btn:active { background: #43703e; }
-
-  /* עיצוב המקלדת והמקשים */
+  
   .keyboard { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 450px; margin-top: 10px; padding: 0 5px; box-sizing: border-box; }
   .kb-row { display: flex; justify-content: center; gap: 4px; width: 100%; }
   .kb-btn { background: #818384; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 1rem; padding: 14px 0; flex: 1; cursor: pointer; user-select: none; display: flex; justify-content: center; align-items: center; }
   .kb-btn.wide { flex: 1.5; font-size: 0.85rem; }
   
-  /* צבעי מקשים לפי סטטוס */
   .kb-btn.c { background: #538d4e; }
   .kb-btn.p { background: #b59f3b; }
   .kb-btn.a { background: #3a3a3c; }
 
-  /* חלון קופץ סטטיסטיקות */
   #stats-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10; }
   .stats-content { background: #121213; border: 1px solid #3a3a3c; padding: 20px; border-radius: 8px; width: 90%; max-width: 350px; text-align: center; position: relative; }
   .close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
@@ -79,8 +85,22 @@
 </div>
 
 <script>
-  const word = "STERN"; // <--- המילה היומית
-  
+  const weeklySchedule = {
+    "2026-08-12": "EDIFY",
+    "2026-08-13": "STERN",
+    "2026-08-14": "TRAIN",
+    "2026-08-15": "PLANT",
+    "2026-08-16": "BEACH",
+    "2026-08-17": "MUSIC",
+    "2026-08-18": "BOOKS"
+  };
+
+  function getDailyWord() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return weeklySchedule[todayStr] || "SMART";
+  }
+
+  const word = getDailyWord();
   let stats = JSON.parse(localStorage.getItem('wordle_stats')) || {
     played: 0, wins: 0, currentStreak: 0, maxStreak: 0, dist: [0,0,0,0,0,0]
   };
@@ -89,21 +109,14 @@
     localStorage.removeItem('guesses');
     localStorage.removeItem('r');
     localStorage.removeItem('word_completed');
+    localStorage.removeItem('letter_states');
     localStorage.setItem('current_word', word);
   }
 
-  let validWords = new Set([word, "SNORE", "NORTH", "APPLE", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE"]);
-  fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
-    .then(res => res.text())
-    .then(text => { text.split('\n').forEach(w => { if(w.trim()) validWords.add(w.trim().toUpperCase()); }); })
-    .catch(e => console.log("Using default dictionary"));
-
-  let r = 0, t = 0, over = false, won = false;
+  let r = parseInt(localStorage.getItem('r')) || 0;
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
-  let savedR = parseInt(localStorage.getItem('r')) || 0;
-  r = savedR;
-
-  // מעקב אחר מצב האותיות במקלדת ('c' ירוק, 'p' צהוב, 'a' אפור)
+  let won = (localStorage.getItem('word_completed') === word);
+  let over = (r >= 6 || won);
   let letterStates = JSON.parse(localStorage.getItem('letter_states')) || {};
 
   const board = document.getElementById('b');
@@ -117,18 +130,12 @@
     board.appendChild(row);
   }
 
-  // בניית מקלדת ויזואלית
   const kbLayout = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   let kbContainer = document.createElement('div');
   kbContainer.className = 'keyboard';
-  
   kbLayout.forEach((rowStr, idx) => {
     let kbRow = document.createElement('div');
     kbRow.className = 'kb-row';
-    if (idx === 2) {
-      let enterBtn = document.createElement('button3'); // temporary helper
-      // נבנה בצורה מסודרת
-    }
     rowStr.split('').forEach(ch => {
       let btn = document.createElement('button');
       btn.className = 'kb-btn';
@@ -143,7 +150,6 @@
       enterBtn.innerText = 'ENTER';
       enterBtn.onclick = () => press('ENTER');
       kbRow.prepend(enterBtn);
-      
       let delBtn = document.createElement('button');
       delBtn.className = 'kb-btn wide';
       delBtn.innerText = '⌫';
@@ -154,102 +160,41 @@
   });
   document.body.appendChild(kbContainer);
 
-  // צביעת שורות קודמות ועדכון מקלדת בטעינה
   for (let i = 0; i < r; i++) {
-    let guessStr = guesses[i].join('');
-    if (guessStr.length === 5) paintRow(i, guessStr, false);
+    paintRow(i, guesses[i].join(''), false);
   }
   updateKeyboardColors();
-
-  if (savedR >= 6 || (r > 0 && guesses[r-1].join('') === word)) {
-    over = true;
-    show();
-  }
+  if (over) show();
 
   function press(k) {
     if (over) return;
-    document.getElementById('msg-err').style.display = "none";
-    
     if (k === 'ENTER') check();
-    else if (k === 'DEL') { 
-      if (t > 0) { t--; guesses[r][t] = ''; document.getElementById(`t-${r}-${t}`).innerText = ''; } 
-    }
-    else if (t < 5) { guesses[r][t] = k; document.getElementById(`t-${r}-${t}`).innerText = k; t++; }
+    else if (k === 'DEL') { if (guesses[r].join('').length > 0) { let t = guesses[r].lastIndexOf(guesses[r].find(x => x !== '')); t = guesses[r].indexOf(''); t = t === -1 ? 4 : t - 1; if(t<0)t=0; guesses[r][t] = ''; document.getElementById(`t-${r}-${t}`).innerText = ''; } }
+    else { let t = guesses[r].indexOf(''); if (t !== -1) { guesses[r][t] = k; document.getElementById(`t-${r}-${t}`).innerText = k; } }
   }
 
   function check() {
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
-    
-    if (!validWords.has(guess)) {
-      let err = document.getElementById('msg-err');
-      err.style.display = 'block';
-      setTimeout(() => err.style.display = 'none', 1500);
-      return;
-    }
-
     paintRow(r, guess, true);
-    localStorage.setItem('guesses', JSON.stringify(guesses));
-    localStorage.setItem('r', r + 1);
-    localStorage.setItem('letter_states', JSON.stringify(letterStates));
-    updateKeyboardColors();
-    
-    if (guess === word) { won = true; r++; finish(); } 
-    else if (r === 5) { r++; finish(); } 
-    else { r++; t = 0; }
+    if (guess === word) { won = true; finish(); }
+    else { r++; localStorage.setItem('r', r); if (r >= 6) finish(); }
   }
 
   function paintRow(rowIdx, guess, updateStates) {
     let targetArr = word.split('');
-    let guessArr = guess.split('');
     let rowTiles = [];
-    let rowColors = Array(5).fill('a');
-    
-    for (let i = 0; i < 5; i++) { rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`)); }
-
-    // בדיקת ירוקים
-    for (let i = 0; i < 5; i++) {
-      if (guessArr[i] === targetArr[i]) { 
-        rowTiles[i].classList.add('c'); 
-        rowColors[i] = 'c';
-        targetArr[i] = null; 
-        guessArr[i] = null; 
-      }
-    }
-    // בדיקת צהובים ואפורים
-    for (let i = 0; i < 5; i++) {
-      if (guessArr[i] !== null) {
-        let idx = targetArr.indexOf(guessArr[i]);
-        if (idx > -1) { 
-          rowTiles[i].classList.add('p'); 
-          rowColors[i] = 'p';
-          targetArr[idx] = null; 
-        } else { 
-          rowTiles[i].classList.add('a'); 
-          rowColors[i] = 'a';
-        }
-      }
-    }
-
-    // עדכון סטטוס המקלדת (עדיפות לירוק על פני צהוב, ולצהוב על פני אפור)
-    if (updateStates) {
-      for (let i = 0; i < 5; i++) {
-        let ch = guess[i];
-        let col = rowColors[i];
-        if (letterStates[ch] === 'c') continue;
-        if (letterStates[ch] === 'p' && col === 'a') continue;
-        letterStates[ch] = col;
-      }
-    }
+    for (let i = 0; i < 5; i++) rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`));
+    for (let i = 0; i < 5; i++) if (guess[i] === targetArr[i]) { rowTiles[i].classList.add('c'); letterStates[guess[i]] = 'c'; targetArr[i] = null; }
+    for (let i = 0; i < 5; i++) if (rowTiles[i].innerText !== "" && !rowTiles[i].classList.contains('c')) { let idx = targetArr.indexOf(guess[i]); if (idx > -1) { rowTiles[i].classList.add('p'); if(letterStates[guess[i]] !== 'c') letterStates[guess[i]] = 'p'; targetArr[idx] = null; } else { rowTiles[i].classList.add('a'); if(!letterStates[guess[i]]) letterStates[guess[i]] = 'a'; } }
+    localStorage.setItem('letter_states', JSON.stringify(letterStates));
+    updateKeyboardColors();
   }
 
   function updateKeyboardColors() {
     for (let ch in letterStates) {
       let btn = document.getElementById(`kb-${ch}`);
-      if (btn) {
-        btn.classList.remove('c', 'p', 'a');
-        btn.classList.add(letterStates[ch]);
-      }
+      if (btn) { btn.classList.remove('c', 'p', 'a'); btn.classList.add(letterStates[ch]); }
     }
   }
 
@@ -257,61 +202,21 @@
     over = true;
     if (localStorage.getItem('word_completed') !== word) {
       stats.played++;
-      if (won) {
-        stats.wins++;
-        stats.currentStreak++;
-        if (stats.currentStreak > stats.maxStreak) stats.maxStreak = stats.currentStreak;
-        stats.dist[r-1]++;
-      } else {
-        stats.currentStreak = 0;
-      }
+      if (won) { stats.wins++; stats.currentStreak++; stats.dist[r] = (stats.dist[r] || 0) + 1; }
+      else stats.currentStreak = 0;
       localStorage.setItem('wordle_stats', JSON.stringify(stats));
       localStorage.setItem('word_completed', word);
     }
     show();
-    setTimeout(openStats, 1500);
   }
 
   function show() {
     document.getElementById('box').style.display = 'block';
-    let text = `Dr. Sean's Words ${won ? r : 'X'}/6\n\n`;
-    for (let i = 0; i < r; i++) {
-      for (let j = 0; j < 5; j++) {
-        let el = document.getElementById(`t-${i}-${j}`);
-        if (el.classList.contains('c')) text += '🟩';
-        else if (el.classList.contains('p')) text += '🟨';
-        else text += '⬛';
-      }
-      text += '\n';
-    }
+    let text = `Dr. Sean's Words ${won ? (r+1) : 'X'}/6\n\n`;
     document.getElementById('res').value = text;
   }
-
-  function shareResult() {
-    const text = document.getElementById('res').value;
-    if (navigator.share) {
-      navigator.share({ title: "Dr. Sean's Words", text: text }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(text).then(() => { alert("Copied to clipboard!"); });
-    }
-  }
-
-  function openStats() {
-    document.getElementById('st-played').innerText = stats.played;
-    document.getElementById('st-win').innerText = stats.played > 0 ? Math.round((stats.wins / stats.played) * 100) : 0;
-    document.getElementById('st-streak').innerText = stats.currentStreak;
-    document.getElementById('st-max').innerText = stats.maxStreak;
-    
-    let distHtml = "";
-    let maxDist = Math.max(...stats.dist, 1);
-    for (let i = 0; i < 6; i++) {
-      let w = Math.max(7, Math.round((stats.dist[i] / maxDist) * 100));
-      let highlight = (won && (i === r - 1)) ? 'highlight' : '';
-      distHtml += `<div class="dist-row"><div class="dist-num">${i+1}</div><div class="dist-bar ${highlight}" style="width: ${w}%;">${stats.dist[i]}</div></div>`;
-    }
-    document.getElementById('st-dist').innerHTML = distHtml;
-    document.getElementById('stats-modal').style.display = 'flex';
-  }
+  function shareResult() { navigator.clipboard.writeText(document.getElementById('res').value).then(() => alert("Copied!")); }
+  function openStats() { document.getElementById('stats-modal').style.display = 'flex'; }
   function closeStats() { document.getElementById('stats-modal').style.display = 'none'; }
 </script>
 </body>
