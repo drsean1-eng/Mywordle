@@ -88,7 +88,7 @@
   const weeklySchedule = {
     "2026-08-12": "EDIFY",
     "2026-08-13": "STERN",
-    "2026-08-14": "ILANA",
+    "2026-08-14": "TRAIN",
     "2026-08-15": "PLANT",
     "2026-08-16": "BEACH",
     "2026-08-17": "MUSIC",
@@ -113,10 +113,16 @@
     localStorage.setItem('current_word', word);
   }
 
+  // טעינת מילון רחב לבדיקת מילים חוקיות
+  let validWords = new Set([word, "SNORE", "NORTH", "APPLE", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", "WORLD", "SNARE", "PLANE", "EDIFY", "STERN", "TRAIN", "PLANT", "BEACH", "MUSIC", "BOOKS"]);
+  fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
+    .then(res => res.text())
+    .then(text => { text.split('\n').forEach(w => { if(w.trim()) validWords.add(w.trim().toUpperCase()); }); })
+    .catch(e => console.log("Using default dictionary"));
+
   let r = parseInt(localStorage.getItem('r')) || 0;
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
   
-  // מנגנון הגנה: אם הנתונים בזיכרון נפגמו ולא מערך תקין, נאפס אותם כדי למנוע שורות משובשות
   if (!Array.isArray(guesses) || guesses.length !== 6) {
     guesses = Array.from({length: 6}, () => Array(5).fill(''));
     r = 0;
@@ -168,7 +174,6 @@
   });
   document.body.appendChild(kbContainer);
 
-  // שחזור מלא ומדויק של הלוח מהזיכרון השמור
   for (let i = 0; i < 6; i++) {
     let guessStr = guesses[i].join('');
     if (guessStr.length === 5) {
@@ -214,6 +219,14 @@
   function check() {
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
+
+    // בדיקה האם המילה קיימת במילון המורשה
+    if (!validWords.has(guess)) {
+      let err = document.getElementById('msg-err');
+      err.style.display = 'block';
+      setTimeout(() => err.style.display = 'none', 1500);
+      return;
+    }
 
     paintRow(r, guess, true);
 
