@@ -15,17 +15,19 @@
 </script>
 
 <style>
-  body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding-bottom: 20px; }
+  body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding-bottom: 20px; min-height: 100vh; box-sizing: border-box; border: 1px solid #40E0D0; }
   .header-container { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
-  h1 { font-size: 1.8rem; margin: 15px 0; text-align: center; flex-grow: 1; }
+  h1 { font-size: 1.8rem; margin: 15px 0; text-align: center; flex-grow: 1; color: #40E0D0; }
   .icon-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
   
-  .board { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; margin: 10px 0; }
+  .board { display: grid; grid-template-rows: repeat(7, 1fr); gap: 5px; margin: 10px 0; }
   .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
   .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
   .c { background: #538d4e !important; border-color: #538d4e !important; color: white;} 
   .p { background: #b59f3b !important; border-color: #b59f3b !important; color: white;} 
   .a { background: #3a3a3c !important; border-color: #3a3a3c !important; color: white;}
+  
+  #bonus-msg { display: none; color: #40E0D0; font-weight: bold; font-size: 0.95rem; margin: 8px 0; text-align: center; background: #222; padding: 8px 12px; border-radius: 4px; border: 1px dashed #40E0D0; width: 90%; max-width: 320px; }
   
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
   textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: none; }
@@ -43,7 +45,7 @@
   .kb-btn.a { background: #3a3a3c; }
 
   #stats-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10; }
-  .stats-content { background: #121213; border: 1px solid #3a3a3c; padding: 20px; border-radius: 8px; width: 90%; max-width: 350px; text-align: center; position: relative; }
+  .stats-content { background: #121213; border: 1px solid #40E0D0; padding: 20px; border-radius: 8px; width: 90%; max-width: 350px; text-align: center; position: relative; }
   .close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
   .stats-grid { display: flex; justify-content: space-around; margin: 20px 0; }
   .stat-box { display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; }
@@ -63,7 +65,9 @@
 </div>
 
 <div id="msg-err">Not a valid word!</div>
+<div id="bonus-msg">✨ לא הצלחת היום אך יש לך בונוס לעוד נסיון אחד! ✨</div>
 <div class="board" id="b"></div>
+
 <div id="box">
   <textarea id="res" readonly></textarea>
   <button id="share-btn" onclick="shareResult()">Share 📤</button>
@@ -72,7 +76,7 @@
 <div id="stats-modal">
   <div class="stats-content">
     <button class="close-btn" onclick="closeStats()">×</button>
-    <h2 style="margin-top:0;">STATISTICS</h2>
+    <h2 style="margin-top:0; color:#40E0D0;">STATISTICS</h2>
     <div class="stats-grid">
       <div class="stat-box"><span class="stat-val" id="st-played">0</span><span>Played</span></div>
       <div class="stat-box"><span class="stat-val" id="st-win">0</span><span>Win %</span></div>
@@ -102,14 +106,17 @@
 
   const word = getDailyWord();
   let stats = JSON.parse(localStorage.getItem('wordle_stats')) || {
-    played: 0, wins: 0, currentStreak: 0, maxStreak: 0, dist: [0,0,0,0,0,0]
+    played: 0, wins: 0, currentStreak: 0, maxStreak: 0, dist: [0,0,0,0,0,0,0]
   };
   
+  if (!stats.dist || stats.dist.length < 7) stats.dist = [0,0,0,0,0,0,0];
+
   if (localStorage.getItem('current_word') !== word) {
     localStorage.removeItem('guesses');
     localStorage.removeItem('r');
     localStorage.removeItem('word_completed');
     localStorage.removeItem('letter_states');
+    localStorage.removeItem('bonus_active');
     localStorage.setItem('current_word', word);
   }
 
@@ -167,22 +174,26 @@
     .catch(e => console.log("Using local dictionary"));
 
   let r = parseInt(localStorage.getItem('r')) || 0;
-  let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
+  let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 7}, () => Array(5).fill(''));
   
-  if (!Array.isArray(guesses) || guesses.length !== 6) {
-    guesses = Array.from({length: 6}, () => Array(5).fill(''));
+  if (!Array.isArray(guesses) || guesses.length !== 7) {
+    guesses = Array.from({length: 7}, () => Array(5).fill(''));
     r = 0;
     localStorage.setItem('guesses', JSON.stringify(guesses));
     localStorage.setItem('r', r);
   }
 
   let won = (localStorage.getItem('word_completed') === word);
-  let over = (r >= 6 || won);
+  let bonusActive = (localStorage.getItem('bonus_active') === 'true');
+  let over = (r >= 7 || (r >= 6 && !bonusActive && won === false));
   let letterStates = JSON.parse(localStorage.getItem('letter_states')) || {};
 
   const board = document.getElementById('b');
-  for (let i = 0; i < 6; i++) {
-    let row = document.createElement('div'); row.className = 'row';
+  for (let i = 0; i < 7; i++) {
+    let row = document.createElement('div'); 
+    row.className = 'row';
+    if (i === 6) row.id = 'bonus-row';
+    if (i === 6 && !bonusActive && r < 6) row.style.display = 'none';
     for (let j = 0; j < 5; j++) {
       let tile = document.createElement('div'); tile.className = 'tile'; tile.id = `t-${i}-${j}`;
       row.appendChild(tile);
@@ -220,7 +231,7 @@
   });
   document.body.appendChild(kbContainer);
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 7; i++) {
     let guessStr = guesses[i].join('');
     if (guessStr.length === 5) {
       paintRow(i, guessStr, false);
@@ -232,6 +243,12 @@
       }
     }
   }
+
+  if (bonusActive) {
+    document.getElementById('bonus-msg').style.display = 'block';
+    document.getElementById('bonus-row').style.display = 'grid';
+  }
+
   updateKeyboardColors();
   if (over) show();
 
@@ -285,7 +302,14 @@
     localStorage.setItem('letter_states', JSON.stringify(letterStates));
     updateKeyboardColors();
 
-    if (won || r >= 6) {
+    if (won) {
+      finish();
+    } else if (r === 6 && !bonusActive) {
+      bonusActive = true;
+      localStorage.setItem('bonus_active', 'true');
+      document.getElementById('bonus-msg').style.display = 'block';
+      document.getElementById('bonus-row').style.display = 'grid';
+    } else if (r >= 7 || (r >= 6 && !bonusActive)) {
       finish();
     }
   }
@@ -343,8 +367,13 @@
     over = true;
     if (localStorage.getItem('word_completed') !== word) {
       stats.played++;
-      if (won) { stats.wins++; stats.currentStreak++; stats.dist[r-1] = (stats.dist[r-1] || 0) + 1; }
-      else stats.currentStreak = 0;
+      if (won) { 
+        stats.wins++; 
+        stats.currentStreak++; 
+        stats.dist[r-1] = (stats.dist[r-1] || 0) + 1; 
+      } else { 
+        stats.currentStreak = 0; 
+      }
       localStorage.setItem('wordle_stats', JSON.stringify(stats));
       localStorage.setItem('word_completed', word);
     }
@@ -353,7 +382,7 @@
 
   function show() {
     document.getElementById('box').style.display = 'block';
-    let text = `Dr. Sean's Words ${won ? r : 'X'}/6\n\n`;
+    let text = `Dr. Sean's Words ${won ? r : 'X'}/7\n\n`;
     document.getElementById('res').value = text;
   }
   function shareResult() { navigator.clipboard.writeText(document.getElementById('res').value).then(() => alert("Copied!")); }
