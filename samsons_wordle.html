@@ -30,7 +30,7 @@
   #bonus-msg { display: none; color: #40E0D0; font-weight: bold; font-size: 0.95rem; margin: 8px 0; text-align: center; background: #222; padding: 8px 12px; border-radius: 4px; border: 1px dashed #40E0D0; width: 90%; max-width: 320px; }
   
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
-  textarea { width: 100%; height: 90px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: none; }
+  textarea { width: 100%; height: 160px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: none; text-align: center;}
   #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; }
   
   #share-btn { background: #538d4e; color: white; border: none; padding: 12px 24px; font-size: 1.2rem; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; max-width: 300px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 8px; }
@@ -382,9 +382,30 @@
 
   function show() {
     document.getElementById('box').style.display = 'block';
+    
+    // בניה של הטקסט עם האימוג'ים!
     let text = `Dr. Sean's Words ${won ? r : 'X'}/7\n\n`;
+    
+    for (let i = 0; i < r; i++) {
+      let rowEmoji = '';
+      for (let j = 0; j < 5; j++) {
+        let tile = document.getElementById(`t-${i}-${j}`);
+        if (tile.classList.contains('c')) {
+          rowEmoji += '🟩';
+        } else if (tile.classList.contains('p')) {
+          rowEmoji += '🟨';
+        } else if (tile.classList.contains('a')) {
+          rowEmoji += '⬛';
+        } else {
+          rowEmoji += '⬛'; 
+        }
+      }
+      text += rowEmoji + '\n';
+    }
+    
     document.getElementById('res').value = text;
   }
+  
   function shareResult() { navigator.clipboard.writeText(document.getElementById('res').value).then(() => alert("Copied!")); }
   function openStats() { document.getElementById('stats-modal').style.display = 'flex'; }
   function closeStats() { document.getElementById('stats-modal').style.display = 'none'; }
