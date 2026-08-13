@@ -31,8 +31,11 @@
   
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
   textarea { width: 100%; height: 160px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: none; text-align: center;}
-  #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; }
   
+  /* Toast Notifications */
+  #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; text-align: center; }
+  #toast-msg { color: white; background: #538d4e; padding: 10px 20px; border-radius: 4px; font-weight: bold; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: none; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+
   #share-btn { background: #538d4e; color: white; border: none; padding: 12px 24px; font-size: 1.2rem; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; max-width: 300px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 8px; }
   
   .keyboard { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 450px; margin-top: 10px; padding: 0 5px; box-sizing: border-box; }
@@ -72,6 +75,9 @@
   <textarea id="res" readonly></textarea>
   <button id="share-btn" onclick="shareResult()">Share 📤</button>
 </div>
+
+<!-- Toast notification for copy success -->
+<div id="toast-msg">Copied to clipboard</div>
 
 <div id="stats-modal">
   <div class="stats-content">
@@ -120,18 +126,30 @@
     localStorage.setItem('current_word', word);
   }
 
-  // סט התחלתי המכיל את מילת היום ומילים נפוצות מרכזיות
+  // סט התחלתי
   let validWords = new Set([word, "ABOUT", "EDIFY", "STERN", "TRAIN", "PLANT", "BEACH", "MUSIC", "BOOKS", "SMART", "HOUSE", "WATER"]);
 
-  // טעינת מילון הענק המלא (מעל 12,000 מילים) ישירות ממסד הנתונים של וורדל
-  fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
-    .then(res => res.text())
-    .then(text => { 
-      text.split('\n').forEach(w => { 
-        if(w.trim()) validWords.add(w.trim().toUpperCase()); 
-      }); 
-    })
-    .catch(e => console.log("Dictionary loaded via fallback"));
+  // מנגנון חדש: טעינה מקומית של המילון או שליפה מהרשת במקרה הצורך
+  let savedDict = localStorage.getItem('full_dictionary');
+  if (savedDict) {
+    savedDict.split(',').forEach(w => validWords.add(w));
+  } else {
+    fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
+      .then(res => res.text())
+      .then(text => { 
+        let fetchedWords = [];
+        text.split('\n').forEach(w => { 
+          let trimmed = w.trim().toUpperCase();
+          if(trimmed) {
+            validWords.add(trimmed); 
+            fetchedWords.push(trimmed);
+          }
+        }); 
+        // שמירת המילון במכשיר לפעמים הבאות
+        localStorage.setItem('full_dictionary', fetchedWords.join(','));
+      })
+      .catch(e => console.log("Dictionary loaded via fallback"));
+  }
 
   let r = parseInt(localStorage.getItem('r')) || 0;
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 7}, () => Array(5).fill(''));
@@ -364,7 +382,15 @@
     document.getElementById('res').value = text;
   }
   
-  function shareResult() { navigator.clipboard.writeText(document.getElementById('res').value).then(() => alert("Copied!")); }
+  // פונקציית שיתוף מעודכנת עם ה-Toast
+  function shareResult() { 
+    navigator.clipboard.writeText(document.getElementById('res').value).then(() => {
+      let toast = document.getElementById('toast-msg');
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }); 
+  }
+
   function openStats() { document.getElementById('stats-modal').style.display = 'flex'; }
   function closeStats() { document.getElementById('stats-modal').style.display = 'none'; }
 </script>
