@@ -113,14 +113,58 @@
     localStorage.setItem('current_word', word);
   }
 
-  // מילון מובטח ומקומי שלא תלוי בחיבור חיצוני
-  const validWords = new Set([
-    word, "EDIFY", "STERN", "TRAIN", "PLANT", "BEACH", "MUSIC", "BOOKS",
+  let validWords = new Set([
+    word, "ABOUT", "EDIFY", "STERN", "TRAIN", "PLANT", "BEACH", "MUSIC", "BOOKS",
     "SNORE", "NORTH", "APPLE", "STARS", "PARTY", "DANCE", "LIGHT", "BRAIN", 
     "WORLD", "SNARE", "PLANE", "SMART", "HOUSE", "WATER", "GREEN", "BOARD",
-    "CHAIR", "TABLE", "PAPER", "PENIC", "SOUND", "VOICE", "HEART", "SMILE",
-    "PIANO", "GUITAR", "NOVEL", "DRAMA", "STAGE", "MOVIE", "SILVER", "GOLDEN"
+    "CHAIR", "TABLE", "PAPER", "SOUND", "VOICE", "HEART", "SMILE", "PIANO", 
+    "GUITAR", "NOVEL", "DRAMA", "STAGE", "MOVIE", "SILVER", "GOLDEN", "SHIRT",
+    "MOUSE", "WHITE", "BLACK", "MONEY", "POWER", "TIGER", "HORSE", "EARTH", 
+    "SPACE", "SLEEP", "DRIVE", "BROWN", "FIELD", "BLOOD", "CHILD", "CREAM", 
+    "EVENT", "GLASS", "GROUP", "GUIDE", "HOTEL", "ISSUE", "LEMON", "LOWER", 
+    "MODEL", "NIGHT", "PHONE", "PIECE", "PLACE", "POINT", "PRICE", "QUEEN", 
+    "RADIO", "RIGHT", "RIVER", "ROUND", "ROUTE", "RUGBY", "SCALE", "SCENE", 
+    "SCOPE", "SHORE", "SHORT", "SIGHT", "SMALL", "SMOKE", "SOLAR", "SOLID", 
+    "SOLVE", "SONGS", "SOUTH", "SPEED", "SPEND", "SPORT", "STACK", "STAFF", 
+    "STAND", "START", "STATE", "STEAM", "STEEL", "STICK", "STILL", "STOCK", 
+    "STONE", "STORE", "STORY", "STRIP", "STUDY", "STYLE", "SUGAR", "SUITE", 
+    "SUPER", "SWEET", "TASTE", "TEACH", "TEAM", "TEETH", "THANK", "THEME", 
+    "THERE", "THESE", "THICK", "THING", "THINK", "THIRD", "THOSE", "THREE", 
+    "THROW", "TIGHT", "TITLE", "TODAY", "TOTAL", "TOUCH", "TOWER", "TRACK", 
+    "TRADE", "TREND", "TRIAL", "TRUST", "TRUTH", "UNCLE", "UNION", "UNITY", 
+    "UPPER", "UPSET", "URBAN", "USUAL", "VALID", "VALUE", "VIDEO", "VIRUS", 
+    "VISIT", "VITAL", "WASTE", "WATCH", "WHEEL", "WHERE", "WHICH", "WHILE", 
+    "WHOLE", "WOMAN", "WORRY", "WRITE", "WRONG", "YACHT", "YIELD", "YOUNG", 
+    "YOUTH", "ADULT", "AGENT", "ANGER", "AWARD", "BASIS", "BIRTH", "BLOCK", 
+    "BOOST", "BUDGET", "CABIN", "CAMEL", "CARRY", "CATCH", "CAUSE", "CHAIN", 
+    "CHART", "CHASE", "CHEAP", "CHECK", "CHEST", "CHIEF", "CHINA", "CLAIM", 
+    "CLASS", "CLEAN", "CLEAR", "CLIMB", "CLOCK", "CLOSE", "COACH", "COAST", 
+    "COURT", "COVER", "CRIME", "CYCLE", "DEATH", "DEPTH", "DIRTY", "DONOR", 
+    "DOUBT", "DRAFT", "DREAM", "DRESS", "DRINK", "ENEMY", "ENTRY", "ERROR", 
+    "EVERY", "EXACT", "EXIST", "EXTRA", "FAITH", "FALSE", "FAULT", "FIBER", 
+    "FIFTH", "FIFTY", "FIGHT", "FINAL", "FIRST", "FIXED", "FLASH", "FLEET", 
+    "FLOOR", "FLUID", "FOCUS", "FORCE", "FORTH", "FRAME", "FRANK", "FRONT", 
+    "FRUIT", "FUNNY", "GIANT", "GIVEN", "GLOVE", "GRACE", "GRADE", "GRAND", 
+    "GRANT", "GRASS", "GREAT", "GROSS", "GUARD", "GUESS", "GUEST", "HAPPY", 
+    "HEAVY", "HUMAN", "IDEAL", "IMAGE", "INDEX", "INNER", "INPUT", "JOINT", 
+    "JUDGE", "JUICE", "KNIFE", "KNOCK", "LABEL", "LABOR", "LARGE", "LAUGH", 
+    "LAYER", "LEARN", "LEASE", "LEAST", "LEAVE", "LEGAL", "LEVEL", "LIMIT", 
+    "LINEN", "LOCAL", "LOGIC", "LOOSE", "LUCKY", "MAGIC", "MAJOR", "MAKER", 
+    "MARCH", "MATCH", "MAYOR", "MEANT", "MEDAL", "MEDIA", "METAL", "METER", 
+    "MICRO", "MIGHT", "MINOR", "MINUS", "MIXED", "MONTH", "MORAL", "MOTOR", 
+    "MOUNT", "MOUTH", "NAKED", "NAVAL", "NEEDS", "NERVE", "NEVER", "NEWLY", 
+    "NOBLE", "NOISE", "NOTED", "NURSE", "OCEAN", "OFFER", "OFTEN", "ORDER", 
+    "OTHER", "OUTER", "OWNER", "PANEL", "PAPER", "PARTY", "PASTE", "PATCH", 
+    "PAUSE", "PEACE", "PHASE", "PILOT", "PITCH", "PLAIN", "PLATE", "POUND", 
+    "PRESS", "PRIDE", "PRIME", "PRINT", "PRIOR", "PRIZE", "PROOF", "PROUD", 
+    "PROVE", "QUICK", "QUIET", "QUITE", "RAISE", "RANGE", "RAPID", "RATIO", 
+    "REACH", "REACT", "READY", "REFER", "RIVAL", "ROBIN", "ROBOT", "ROUGH", "ROYAL", "RURAL"
   ]);
+
+  fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
+    .then(res => res.text())
+    .then(text => { text.split('\n').forEach(w => { if(w.trim()) validWords.add(w.trim().toUpperCase()); }); })
+    .catch(e => console.log("Using local dictionary"));
 
   let r = parseInt(localStorage.getItem('r')) || 0;
   let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 6}, () => Array(5).fill(''));
@@ -222,7 +266,6 @@
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
 
-    // בדיקה מחמירה מול המילון המקומי
     if (!validWords.has(guess)) {
       let err = document.getElementById('msg-err');
       err.style.display = 'block';
