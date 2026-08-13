@@ -14,6 +14,9 @@
   gtag('config', 'G-XXXXXXXXXX');
 </script>
 
+<!-- Canvas Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
 <style>
   body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding-bottom: 20px; min-height: 100vh; box-sizing: border-box; border: 1px solid #40E0D0; }
   .header-container { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
@@ -129,7 +132,7 @@
   // סט התחלתי
   let validWords = new Set([word, "ABOUT", "EDIFY", "STERN", "TRAIN", "PLANT", "BEACH", "MUSIC", "BOOKS", "SMART", "HOUSE", "WATER"]);
 
-  // מנגנון חדש: טעינה מקומית של המילון או שליפה מהרשת במקרה הצורך
+  // טעינה מקומית של המילון או שליפה מהרשת
   let savedDict = localStorage.getItem('full_dictionary');
   if (savedDict) {
     savedDict.split(',').forEach(w => validWords.add(w));
@@ -145,7 +148,6 @@
             fetchedWords.push(trimmed);
           }
         }); 
-        // שמירת המילון במכשיר לפעמים הבאות
         localStorage.setItem('full_dictionary', fetchedWords.join(','));
       })
       .catch(e => console.log("Dictionary loaded via fallback"));
@@ -349,6 +351,15 @@
         stats.wins++; 
         stats.currentStreak++; 
         stats.dist[r-1] = (stats.dist[r-1] || 0) + 1; 
+        
+        // הפעלת אפקט הקונפטי בניצחון
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        }
       } else { 
         stats.currentStreak = 0; 
       }
@@ -382,7 +393,6 @@
     document.getElementById('res').value = text;
   }
   
-  // פונקציית שיתוף מעודכנת עם ה-Toast
   function shareResult() { 
     navigator.clipboard.writeText(document.getElementById('res').value).then(() => {
       let toast = document.getElementById('toast-msg');
