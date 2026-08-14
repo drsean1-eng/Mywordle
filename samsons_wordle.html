@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="google-site-verification" content="YvH0a4pAP0SzpCBnW1rzTku-2ktBlkW6rmGySR4nY" />
 <title>Dr. Sean's Words</title>
 
 <!-- Google Analytics -->
@@ -33,9 +34,8 @@
   #bonus-msg { display: none; color: #40E0D0; font-weight: bold; font-size: 0.95rem; margin: 8px 0; text-align: center; background: #222; padding: 8px 12px; border-radius: 4px; border: 1px dashed #40E0D0; width: 90%; max-width: 320px; }
   
   #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
-  textarea { width: 100%; height: 160px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: none; text-align: center;}
+  textarea { width: 100%; height: 160px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: block; text-align: center;}
   
-  /* Toast Notifications */
   #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; text-align: center; }
   #toast-msg { color: white; background: #538d4e; padding: 10px 20px; border-radius: 4px; font-weight: bold; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: none; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
 
@@ -79,7 +79,6 @@
   <button id="share-btn" onclick="shareResult()">Share 📤</button>
 </div>
 
-<!-- Toast notification for copy success -->
 <div id="toast-msg">Copied to clipboard</div>
 
 <div id="stats-modal">
@@ -129,10 +128,8 @@
     localStorage.setItem('current_word', word);
   }
 
-  // סט התחלתי
   let validWords = new Set([word, "ABOUT", "EDIFY", "STERN", "TRAIN", "PLANT", "BEACH", "MUSIC", "BOOKS", "SMART", "HOUSE", "WATER"]);
 
-  // טעינה מקומית של המילון או שליפה מהרשת
   let savedDict = localStorage.getItem('full_dictionary');
   if (savedDict) {
     savedDict.split(',').forEach(w => validWords.add(w));
@@ -230,7 +227,12 @@
   }
 
   updateKeyboardColors();
-  if (over) show();
+
+  if (localStorage.getItem('word_completed') === word) { 
+    show(); 
+  } else if (over) {
+    show();
+  }
 
   function press(k) {
     if (over) return;
@@ -352,7 +354,6 @@
         stats.currentStreak++; 
         stats.dist[r-1] = (stats.dist[r-1] || 0) + 1; 
         
-        // הפעלת אפקט הקונפטי בניצחון
         if (typeof confetti === 'function') {
           confetti({
             particleCount: 120,
@@ -401,8 +402,28 @@
     }); 
   }
 
-  function openStats() { document.getElementById('stats-modal').style.display = 'flex'; }
-  function closeStats() { document.getElementById('stats-modal').style.display = 'none'; }
+  function openStats() { 
+    document.getElementById('st-played').innerText = stats.played;
+    document.getElementById('st-win').innerText = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0;
+    document.getElementById('st-streak').innerText = stats.currentStreak;
+    document.getElementById('st-max').innerText = stats.maxStreak;
+    
+    let distContainer = document.getElementById('st-dist');
+    distContainer.innerHTML = '';
+    let maxDist = Math.max(...stats.dist, 1);
+    for(let i = 0; i < 7; i++) {
+      let row = document.createElement('div');
+      row.className = 'dist-row';
+      row.innerHTML = `<span class="dist-num">${i+1}</span><div class="dist-bar" style="width: ${Math.max(8, (stats.dist[i] / maxDist) * 100)}%">${stats.dist[i]}</div>`;
+      distContainer.appendChild(row);
+    }
+    
+    document.getElementById('stats-modal').style.display = 'flex'; 
+  }
+  
+  function closeStats() { 
+    document.getElementById('stats-modal').style.display = 'none'; 
+  }
 </script>
 </body>
 </html>
