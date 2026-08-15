@@ -27,9 +27,25 @@
 <style>
   body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding-bottom: 20px; min-height: 100vh; box-sizing: border-box; border: 1px solid #40E0D0; }
   .header-container { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
-  h1 { font-size: 1.8rem; margin: 15px 0; text-align: center; flex-grow: 1; color: #40E0D0; }
+  h1 { font-size: 1.8rem; margin: 15px 0 5px 0; text-align: center; flex-grow: 1; color: #40E0D0; }
+  .header-btns { display: flex; gap: 10px; align-items: center; }
   .icon-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
   
+  /* עיצוב מתג Hard Mode במסך הראשי יחד עם כפתור הסבר */
+  .main-hard-mode { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; font-size: 0.85rem; color: #b59f3b; font-weight: bold; }
+  .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #3a3a3c; transition: .4s; border-radius: 18px; }
+  .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+  input:checked + .slider { background-color: #538d4e; }
+  input:checked + .slider:before { transform: translateX(16px); }
+
+  .help-icon { background: #3a3a3c; color: white; border: 1px solid #555; border-radius: 50%; width: 18px; height: 18px; font-size: 0.75rem; font-weight: bold; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 4px; }
+
+  /* מודל הסבר ל-Hard Mode */
+  #help-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 20; }
+  .help-content { background: #121213; border: 1px solid #40E0D0; padding: 20px; border-radius: 8px; width: 90%; max-width: 330px; text-align: left; position: relative; font-size: 0.9rem; line-height: 1.4; color: #fff; }
+
   .board { display: grid; grid-template-rows: repeat(6, 1fr); gap: 5px; margin: 10px 0; }
   .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
   .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
@@ -74,7 +90,32 @@
 <div class="header-container">
   <div style="width: 24px;"></div>
   <h1>DR. SEAN'S WORDS</h1>
-  <button class="icon-btn" onclick="openStats()">📊</button>
+  <div class="header-btns">
+    <button class="icon-btn" onclick="openStats()" title="Statistics">📊</button>
+  </div>
+</div>
+
+<!-- מתג Hard Mode גלוי במסך הראשי כולל כפתור הסבר -->
+<div class="main-hard-mode">
+  <span>Hard Mode</span>
+  <label class="switch">
+    <input type="checkbox" id="hard-mode-switch" onchange="toggleHardMode()">
+    <span class="slider"></span>
+  </label>
+  <span class="help-icon" onclick="openHelp()" title="What is Hard Mode?">?</span>
+</div>
+
+<!-- חלון הסבר (Popup) עבור Hard Mode -->
+<div id="help-modal">
+  <div class="help-content">
+    <button class="close-btn" onclick="closeHelp()">×</button>
+    <h3 style="margin-top:0; color:#40E0D0;">Hard Mode Rules</h3>
+    <p>Any revealed hints must be used in subsequent guesses:</p>
+    <ul style="padding-left: 20px; margin-bottom: 0;">
+      <li>Green letters must stay in the exact same position.</li>
+      <li>Yellow letters must be reused in later guesses.</li>
+    </ul>
+  </div>
 </div>
 
 <div id="msg-err">Not a valid word!</div>
@@ -128,6 +169,29 @@
   } catch(e) {}
   
   if (!stats.dist || stats.dist.length < 7) stats.dist = [0,0,0,0,0,0,0];
+
+  let hardMode = false;
+  try {
+    hardMode = localStorage.getItem('wordle_hard_mode') === 'true';
+    document.getElementById('hard-mode-switch').checked = hardMode;
+  } catch(e) {}
+
+  function toggleHardMode() {
+    if (r > 0) {
+      alert("Hard mode can only be toggled before making any guesses!");
+      document.getElementById('hard-mode-switch').checked = hardMode;
+      return;
+    }
+    hardMode = document.getElementById('hard-mode-switch').checked;
+    try { localStorage.setItem('wordle_hard_mode', hardMode); } catch(e) {}
+  }
+
+  function openHelp() {
+    document.getElementById('help-modal').style.display = 'flex';
+  }
+  function closeHelp() {
+    document.getElementById('help-modal').style.display = 'none';
+  }
 
   try {
     if (localStorage.getItem('current_word') !== word) {
@@ -191,7 +255,6 @@
     if (savedStates) letterStates = savedStates;
   } catch(e) {}
 
-  // בניית הלוח בהתחלה מתחיל ב-6 שורות רגילות
   const board = document.getElementById('b');
   function renderBoard() {
     board.innerHTML = '';
@@ -216,7 +279,6 @@
   }
   renderBoard();
 
-  // בניית המקלדת
   const kbLayout = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   let kbContainer = document.createElement('div');
   kbContainer.className = 'keyboard';
@@ -294,14 +356,76 @@
     }
   }
 
+  function getHardModeError(guess) {
+    if (!hardMode || r === 0) return null;
+    
+    let exactPositions = Array(5).fill(null);
+    let requiredLetters = {};
+
+    for (let i = 0; i < r; i++) {
+      let prevGuess = guesses[i].join('');
+      let targetArr = word.split('');
+      let guessArr = prevGuess.split('');
+      let rowColors = Array(5).fill('a');
+
+      for (let c = 0; c < 5; c++) {
+        if (guessArr[c] === targetArr[c]) {
+          rowColors[c] = 'c';
+          exactPositions[c] = guessArr[c];
+          requiredLetters[guessArr[c]] = (requiredLetters[guessArr[c]] || 0) + 1;
+          targetArr[c] = null;
+          guessArr[c] = null;
+        }
+      }
+      for (let c = 0; c < 5; c++) {
+        if (guessArr[c] !== null) {
+          let idx = targetArr.indexOf(guessArr[c]);
+          if (idx > -1) {
+            rowColors[c] = 'p';
+            requiredLetters[guessArr[c]] = (requiredLetters[guessArr[c]] || 0) + 1;
+            targetArr[idx] = null;
+          }
+        }
+      }
+    }
+
+    for (let c = 0; c < 5; c++) {
+      if (exactPositions[c] !== null && guess[c] !== exactPositions[c]) {
+        return `${c + 1}th letter must be ${exactPositions[c]}`;
+      }
+    }
+
+    let guessCounts = {};
+    for (let ch of guess) {
+      guessCounts[ch] = (guessCounts[ch] || 0) + 1;
+    }
+    for (let ch in requiredLetters) {
+      if ((guessCounts[ch] || 0) < requiredLetters[ch]) {
+        return `Guess must contain ${ch}`;
+      }
+    }
+
+    return null;
+  }
+
   function check() {
     let guess = guesses[r].join('');
     if (guess.length < 5) return;
 
     if (!validWords.has(guess)) {
       let err = document.getElementById('msg-err');
+      err.innerText = "Not a valid word!";
       err.style.display = 'block';
       setTimeout(() => err.style.display = 'none', 1500);
+      return;
+    }
+
+    let hardError = getHardModeError(guess);
+    if (hardError) {
+      let err = document.getElementById('msg-err');
+      err.innerText = hardError;
+      err.style.display = 'block';
+      setTimeout(() => err.style.display = 'none', 2000);
       return;
     }
 
@@ -328,7 +452,6 @@
       bonusActive = true;
       try { localStorage.setItem('bonus_active', 'true'); } catch(e) {}
       renderBoard();
-      // צביעה מחדש של השורות הקודמות אחרי הרנדור מחדש
       for (let i = 0; i < 6; i++) {
         let gStr = guesses[i].join('');
         if (gStr.length === 5) paintRow(i, gStr, false);
