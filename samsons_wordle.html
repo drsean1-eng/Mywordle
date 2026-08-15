@@ -6,6 +6,12 @@
 <meta name="google-site-verification" content="YvH0a4pAP0SzpCBnW1rzTku-2ktBlkW6rmGySR4nY" />
 <title>Dr. Sean's Words</title>
 
+<!-- Facebook Open Graph Meta Tags (לשרינג מוצלח בפייסבוק) -->
+<meta property="og:title" content="Dr. Sean's Words - Daily Word Game">
+<meta property="og:description" content="Can you guess today's secret word? Play Dr. Sean's daily word challenge!">
+<meta property="og:url" content="https://drsean1-eng.github.io/Mywordle/index.html">
+<meta property="og:type" content="website">
+
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>
@@ -113,58 +119,78 @@
   }
 
   const word = getDailyWord();
-  let stats = JSON.parse(localStorage.getItem('wordle_stats')) || {
-    played: 0, wins: 0, currentStreak: 0, maxStreak: 0, dist: [0,0,0,0,0,0,0]
-  };
+
+  // הגנה מלאה על localStorage למניעת קריסה בדפדפנים פנימיים
+  let stats = { played: 0, wins: 0, currentStreak: 0, maxStreak: 0, dist: [0,0,0,0,0,0,0] };
+  try {
+    let savedStats = JSON.parse(localStorage.getItem('wordle_stats'));
+    if (savedStats) stats = savedStats;
+  } catch(e) {}
   
   if (!stats.dist || stats.dist.length < 7) stats.dist = [0,0,0,0,0,0,0];
 
-  if (localStorage.getItem('current_word') !== word) {
-    localStorage.removeItem('guesses');
-    localStorage.removeItem('r');
-    localStorage.removeItem('word_completed');
-    localStorage.removeItem('letter_states');
-    localStorage.removeItem('bonus_active');
-    localStorage.setItem('current_word', word);
-  }
+  try {
+    if (localStorage.getItem('current_word') !== word) {
+      localStorage.removeItem('guesses');
+      localStorage.removeItem('r');
+      localStorage.removeItem('word_completed');
+      localStorage.removeItem('letter_states');
+      localStorage.removeItem('bonus_active');
+      localStorage.setItem('current_word', word);
+    }
+  } catch(e) {}
 
   let validWords = new Set([word, "ABOUT", "EDIFY", "STERN", "TRAIN", "PLANT", "BEACH", "MUSIC", "BOOKS", "SMART", "HOUSE", "WATER"]);
 
-  let savedDict = localStorage.getItem('full_dictionary');
-  if (savedDict) {
-    savedDict.split(',').forEach(w => validWords.add(w));
-  } else {
-    fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
-      .then(res => res.text())
-      .then(text => { 
-        let fetchedWords = [];
-        text.split('\n').forEach(w => { 
-          let trimmed = w.trim().toUpperCase();
-          if(trimmed) {
-            validWords.add(trimmed); 
-            fetchedWords.push(trimmed);
-          }
-        }); 
-        localStorage.setItem('full_dictionary', fetchedWords.join(','));
-      })
-      .catch(e => console.log("Dictionary loaded via fallback"));
-  }
+  try {
+    let savedDict = localStorage.getItem('full_dictionary');
+    if (savedDict) {
+      savedDict.split(',').forEach(w => validWords.add(w));
+    } else {
+      fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
+        .then(res => res.text())
+        .then(text => { 
+          let fetchedWords = [];
+          text.split('\n').forEach(w => { 
+            let trimmed = w.trim().toUpperCase();
+            if(trimmed) {
+              validWords.add(trimmed); 
+              fetchedWords.push(trimmed);
+            }
+          }); 
+          try { localStorage.setItem('full_dictionary', fetchedWords.join(',')); } catch(e) {}
+        })
+        .catch(e => console.log("Dictionary loaded via fallback"));
+    }
+  } catch(e) {}
 
-  let r = parseInt(localStorage.getItem('r')) || 0;
-  let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 7}, () => Array(5).fill(''));
-  
-  if (!Array.isArray(guesses) || guesses.length !== 7) {
-    guesses = Array.from({length: 7}, () => Array(5).fill(''));
-    r = 0;
-    localStorage.setItem('guesses', JSON.stringify(guesses));
-    localStorage.setItem('r', r);
-  }
+  let r = 0;
+  try { r = parseInt(localStorage.getItem('r')) || 0; } catch(e) {}
 
-  let won = (localStorage.getItem('word_completed') === word);
-  let bonusActive = (localStorage.getItem('bonus_active') === 'true');
+  let guesses = Array.from({length: 7}, () => Array(5).fill(''));
+  try {
+    let savedGuesses = JSON.parse(localStorage.getItem('guesses'));
+    if (Array.isArray(savedGuesses) && savedGuesses.length === 7) {
+      guesses = savedGuesses;
+    }
+  } catch(e) {}
+
+  let won = false;
+  let bonusActive = false;
+  try {
+    won = (localStorage.getItem('word_completed') === word);
+    bonusActive = (localStorage.getItem('bonus_active') === 'true');
+  } catch(e) {}
+
   let over = (r >= 7 || (r >= 6 && !bonusActive && won === false));
-  let letterStates = JSON.parse(localStorage.getItem('letter_states')) || {};
+  
+  let letterStates = {};
+  try {
+    let savedStates = JSON.parse(localStorage.getItem('letter_states'));
+    if (savedStates) letterStates = savedStates;
+  } catch(e) {}
 
+  // בניית הלוח
   const board = document.getElementById('b');
   for (let i = 0; i < 7; i++) {
     let row = document.createElement('div'); 
@@ -172,12 +198,15 @@
     if (i === 6) row.id = 'bonus-row';
     if (i === 6 && !bonusActive && r < 6) row.style.display = 'none';
     for (let j = 0; j < 5; j++) {
-      let tile = document.createElement('div'); tile.className = 'tile'; tile.id = \`t-${i}-${j}\`;
+      let tile = document.createElement('div'); 
+      tile.className = 'tile'; 
+      tile.id = `t-${i}-${j}`;
       row.appendChild(tile);
     }
     board.appendChild(row);
   }
 
+  // בניית המקלדת
   const kbLayout = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
   let kbContainer = document.createElement('div');
   kbContainer.className = 'keyboard';
@@ -187,7 +216,7 @@
     rowStr.split('').forEach(ch => {
       let btn = document.createElement('button');
       btn.className = 'kb-btn';
-      btn.id = \`kb-${ch}\`;
+      btn.id = `kb-${ch}`;
       btn.innerText = ch;
       btn.onclick = () => press(ch);
       kbRow.appendChild(btn);
@@ -215,24 +244,26 @@
     } else {
       for (let j = 0; j < 5; j++) {
         if (guesses[i][j]) {
-          document.getElementById(\`t-${i}-${j}\`).innerText = guesses[i][j];
+          document.getElementById(`t-${i}-${j}`).innerText = guesses[i][j];
         }
       }
     }
   }
 
   if (bonusActive) {
-    document.getElementById('bonus-msg').style.display = 'block';
-    document.getElementById('bonus-row').style.display = 'grid';
+    let bMsg = document.getElementById('bonus-msg');
+    let bRow = document.getElementById('bonus-row');
+    if (bMsg) bMsg.style.display = 'block';
+    if (bRow) bRow.style.display = 'grid';
   }
 
   updateKeyboardColors();
 
-  if (localStorage.getItem('word_completed') === word) { 
-    show(); 
-  } else if (over) {
-    show();
-  }
+  try {
+    if (localStorage.getItem('word_completed') === word || over) { 
+      show(); 
+    }
+  } catch(e) {}
 
   function press(k) {
     if (over) return;
@@ -245,7 +276,7 @@
       for (let j = 4; j >= 0; j--) {
         if (rowG[j] !== '') {
           rowG[j] = '';
-          document.getElementById(\`t-${r}-${j}\`).innerText = '';
+          document.getElementById(`t-${r}-${j}`).innerText = '';
           break;
         }
       }
@@ -254,7 +285,7 @@
       for (let j = 0; j < 5; j++) {
         if (rowG[j] === '') {
           rowG[j] = k;
-          document.getElementById(\`t-${r}-${j}\`).innerText = k;
+          document.getElementById(`t-${r}-${j}`).innerText = k;
           break;
         }
       }
@@ -278,17 +309,20 @@
       won = true;
     }
 
-    localStorage.setItem('guesses', JSON.stringify(guesses));
-    r++;
-    localStorage.setItem('r', r);
-    localStorage.setItem('letter_states', JSON.stringify(letterStates));
+    try {
+      localStorage.setItem('guesses', JSON.stringify(guesses));
+      r++;
+      localStorage.setItem('r', r);
+      localStorage.setItem('letter_states', JSON.stringify(letterStates));
+    } catch(e) {}
+
     updateKeyboardColors();
 
     if (won) {
       finish();
     } else if (r === 6 && !bonusActive) {
       bonusActive = true;
-      localStorage.setItem('bonus_active', 'true');
+      try { localStorage.setItem('bonus_active', 'true'); } catch(e) {}
       document.getElementById('bonus-msg').style.display = 'block';
       document.getElementById('bonus-row').style.display = 'grid';
     } else if (r >= 7 || (r >= 6 && !bonusActive)) {
@@ -302,7 +336,7 @@
     let rowTiles = [];
     let rowColors = Array(5).fill('a');
     
-    for (let i = 0; i < 5; i++) rowTiles.push(document.getElementById(\`t-${rowIdx}-${i}\`));
+    for (let i = 0; i < 5; i++) rowTiles.push(document.getElementById(`t-${rowIdx}-${i}`));
     
     for (let i = 0; i < 5; i++) {
       rowTiles[i].innerText = guess[i];
@@ -340,50 +374,50 @@
 
   function updateKeyboardColors() {
     for (let ch in letterStates) {
-      let btn = document.getElementById(\`kb-${ch}\`);
+      let btn = document.getElementById(`kb-${ch}`);
       if (btn) { btn.classList.remove('c', 'p', 'a'); btn.classList.add(letterStates[ch]); }
     }
   }
 
   function finish() {
     over = true;
-    if (localStorage.getItem('word_completed') !== word) {
-      stats.played++;
-      if (won) { 
-        stats.wins++; 
-        stats.currentStreak++; 
-        stats.dist[r-1] = (stats.dist[r-1] || 0) + 1; 
-        
-        if (typeof confetti === 'function') {
-          confetti({
-            particleCount: 120,
-            spread: 80,
-            origin: { y: 0.6 }
-          });
+    try {
+      if (localStorage.getItem('word_completed') !== word) {
+        stats.played++;
+        if (won) { 
+          stats.wins++; 
+          stats.currentStreak++; 
+          stats.dist[r-1] = (stats.dist[r-1] || 0) + 1; 
+          
+          if (typeof confetti === 'function') {
+            confetti({
+              particleCount: 120,
+              spread: 80,
+              origin: { y: 0.6 }
+            });
+          }
+        } else { 
+          stats.currentStreak = 0; 
         }
-      } else { 
-        stats.currentStreak = 0; 
+        localStorage.setItem('wordle_stats', JSON.stringify(stats));
+        localStorage.setItem('word_completed', word);
       }
-      localStorage.setItem('wordle_stats', JSON.stringify(stats));
-      localStorage.setItem('word_completed', word);
-    }
+    } catch(e) {}
     show();
   }
 
   function show() {
     document.getElementById('box').style.display = 'block';
-    let text = \`Dr. Sean's Words ${won ? r : 'X'}/7\n\n\`;
+    let text = `Dr. Sean's Words ${won ? r : 'X'}/7\n\n`;
     
     for (let i = 0; i < r; i++) {
       let rowEmoji = '';
       for (let j = 0; j < 5; j++) {
-        let tile = document.getElementById(\`t-${i}-${j}\`);
-        if (tile.classList.contains('c')) {
+        let tile = document.getElementById(`t-${i}-${j}`);
+        if (tile && tile.classList.contains('c')) {
           rowEmoji += '🟩';
-        } else if (tile.classList.contains('p')) {
+        } else if (tile && tile.classList.contains('p')) {
           rowEmoji += '🟨';
-        } else if (tile.classList.contains('a')) {
-          rowEmoji += '⬛';
         } else {
           rowEmoji += '⬛'; 
         }
@@ -396,6 +430,13 @@
   
   function shareResult() { 
     navigator.clipboard.writeText(document.getElementById('res').value).then(() => {
+      let toast = document.getElementById('toast-msg');
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }).catch(() => {
+      let resArea = document.getElementById('res');
+      resArea.select();
+      document.execCommand('copy');
       let toast = document.getElementById('toast-msg');
       toast.style.display = 'block';
       setTimeout(() => { toast.style.display = 'none'; }, 2000);
@@ -414,7 +455,7 @@
     for(let i = 0; i < 7; i++) {
       let row = document.createElement('div');
       row.className = 'dist-row';
-      row.innerHTML = \`<span class="dist-num">${i+1}</span><div class="dist-bar" style="width: ${Math.max(8, (stats.dist[i] / maxDist) * 100)}%">${stats.dist[i]}</div>\`;
+      row.innerHTML = `<span class="dist-num">${i+1}</span><div class="dist-bar" style="width: ${Math.max(8, (stats.dist[i] / maxDist) * 100)}%">${stats.dist[i]}</div>`;
       distContainer.appendChild(row);
     }
     
