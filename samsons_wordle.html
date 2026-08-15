@@ -1,317 +1,440 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Dr. Sean's Words</title>
-    <style>
-        :root {
-            --green: #6aaa64;
-            --yellow: #c9b458;
-            --gray: #787c7e;
-            --dark-gray: #3a3a3c;
-            --background: #121213;
-            --text: #ffffff;
-        }
-        body {
-            background-color: var(--background);
-            color: var(--text);
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
-            user-select: none;
-        }
-        header {
-            text-align: center;
-            padding: 10px;
-            font-size: 22px;
-            font-weight: bold;
-            letter-spacing: 2px;
-            border-bottom: 1px solid var(--dark-gray);
-            width: 100%;
-        }
-        #board {
-            display: grid;
-            grid-template-rows: repeat(6, 1fr);
-            gap: 5px;
-            padding: 10px;
-            box-sizing: border-box;
-            aspect-ratio: 5 / 6;
-            max-height: 40vh;
-            margin: auto;
-        }
-        .row {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-        }
-        .tile {
-            width: 50px;
-            height: 50px;
-            border: 2px solid var(--dark-gray);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: var(--text);
-            background-color: transparent;
-            box-sizing: border-box;
-        }
-        .tile.filled {
-            border-color: var(--gray);
-        }
-        .tile.correct { background-color: var(--green); border-color: var(--green); }
-        .tile.present { background-color: var(--yellow); border-color: var(--yellow); }
-        .tile.absent { background-color: var(--dark-gray); border-color: var(--dark-gray); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="google-site-verification" content="YvH0a4pAP0SzpCBnW1rzTku-2ktBlkW6rmGySR4nY" />
+<title>Dr. Sean's Words</title>
 
-        #keyboard {
-            width: 100%;
-            max-width: 500px;
-            padding: 10px;
-            box-sizing: border-box;
-            margin-bottom: 20px;
-        }
-        .keyboard-row {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
-        .key {
-            background-color: var(--gray);
-            color: var(--text);
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-            padding: 14px 0;
-            flex: 1;
-            cursor: pointer;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
-        }
-        .key.large {
-            flex: 1.5;
-            font-size: 12px;
-        }
-        #message-container {
-            position: fixed;
-            top: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            pointer-events: none;
-        }
-        .message {
-            background-color: var(--text);
-            color: var(--background);
-            padding: 10px 20px;
-            font-weight: bold;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            opacity: 0.9;
-            transition: opacity 0.3s ease;
-        }
-    </style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+
+<!-- Canvas Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+<style>
+  body { background: #121213; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; margin: 0; padding-bottom: 20px; min-height: 100vh; box-sizing: border-box; border: 1px solid #40E0D0; }
+  .header-container { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; box-sizing: border-box; }
+  h1 { font-size: 1.8rem; margin: 15px 0; text-align: center; flex-grow: 1; color: #40E0D0; }
+  .icon-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+  
+  .board { display: grid; grid-template-rows: repeat(7, 1fr); gap: 5px; margin: 10px 0; }
+  .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .tile { width: 50px; height: 50px; border: 2px solid #3a3a3c; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; }
+  .c { background: #538d4e !important; border-color: #538d4e !important; color: white;} 
+  .p { background: #b59f3b !important; border-color: #b59f3b !important; color: white;} 
+  .a { background: #3a3a3c !important; border-color: #3a3a3c !important; color: white;}
+  
+  #bonus-msg { display: none; color: #40E0D0; font-weight: bold; font-size: 0.95rem; margin: 8px 0; text-align: center; background: #222; padding: 8px 12px; border-radius: 4px; border: 1px dashed #40E0D0; width: 90%; max-width: 320px; }
+  
+  #box { display: none; width: 90%; margin-top: 15px; text-align: center; }
+  textarea { width: 100%; height: 160px; background: #222; color: white; border: 1px solid #555; font-size: 1rem; margin-bottom: 10px; display: block; text-align: center;}
+  
+  #msg-err { color: white; background: #e74c3c; padding: 8px 15px; border-radius: 4px; font-weight: bold; margin-bottom: 10px; display: none; text-align: center; }
+  #toast-msg { color: white; background: #538d4e; padding: 10px 20px; border-radius: 4px; font-weight: bold; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: none; z-index: 100; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+
+  #share-btn { background: #538d4e; color: white; border: none; padding: 12px 24px; font-size: 1.2rem; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; max-width: 300px; margin: 0 auto; display: flex; justify-content: center; align-items: center; gap: 8px; }
+  
+  .keyboard { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 450px; margin-top: 10px; padding: 0 5px; box-sizing: border-box; }
+  .kb-row { display: flex; justify-content: center; gap: 4px; width: 100%; }
+  .kb-btn { background: #818384; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 1rem; padding: 14px 0; flex: 1; cursor: pointer; user-select: none; display: flex; justify-content: center; align-items: center; }
+  .kb-btn.wide { flex: 1.5; font-size: 0.85rem; }
+  
+  .kb-btn.c { background: #538d4e; }
+  .kb-btn.p { background: #b59f3b; }
+  .kb-btn.a { background: #3a3a3c; }
+
+  #stats-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10; }
+  .stats-content { background: #121213; border: 1px solid #40E0D0; padding: 20px; border-radius: 8px; width: 90%; max-width: 350px; text-align: center; position: relative; }
+  .close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+  .stats-grid { display: flex; justify-content: space-around; margin: 20px 0; }
+  .stat-box { display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; }
+  .stat-val { font-size: 1.8rem; font-weight: bold; }
+  #st-dist { text-align: left; font-family: sans-serif; margin-top: 20px; font-size: 0.9rem; }
+  .dist-row { display: flex; align-items: center; margin-bottom: 5px; }
+  .dist-num { width: 15px; }
+  .dist-bar { background: #3a3a3c; color: white; padding: 2px 5px; text-align: right; min-width: 10px; font-weight: bold; }
+  .dist-bar.highlight { background: #538d4e; }
+</style>
 </head>
 <body>
+<div class="header-container">
+  <div style="width: 24px;"></div>
+  <h1>DR. SEAN'S WORDS</h1>
+  <button class="icon-btn" onclick="openStats()">📊</button>
+</div>
 
-    <header>DR. SEAN'S WORDS</header>
+<div id="msg-err">Not a valid word!</div>
+<div id="bonus-msg">✨ Not quite! You get one bonus attempt! ✨</div>
+<div class="board" id="b"></div>
 
-    <div id="message-container"></div>
+<div id="box">
+  <textarea id="res" readonly></textarea>
+  <button id="share-btn" onclick="shareResult()">Share 📤</button>
+</div>
 
-    <div id="board"></div>
+<div id="toast-msg">Copied to clipboard</div>
 
-    <div id="keyboard">
-        <div class="keyboard-row">
-            <button class="key" data-key="q">q</button>
-            <button class="key" data-key="w">w</button>
-            <button class="key" data-key="e">e</button>
-            <button class="key" data-key="r">r</button>
-            <button class="key" data-key="t">t</button>
-            <button class="key" data-key="y">y</button>
-            <button class="key" data-key="u">u</button>
-            <button class="key" data-key="i">i</button>
-            <button class="key" data-key="o">o</button>
-            <button class="key" data-key="p">p</button>
-        </div>
-        <div class="keyboard-row">
-            <button class="key" data-key="a">a</button>
-            <button class="key" data-key="s">s</button>
-            <button class="key" data-key="d">d</button>
-            <button class="key" data-key="f">f</button>
-            <button class="key" data-key="g">g</button>
-            <button class="key" data-key="h">h</button>
-            <button class="key" data-key="j">j</button>
-            <button class="key" data-key="k">k</button>
-            <button class="key" data-key="l">l</button>
-        </div>
-        <div class="keyboard-row">
-            <button class="key large" data-key="ENTER">ENTER</button>
-            <button class="key" data-key="z">z</button>
-            <button class="key" data-key="x">x</button>
-            <button class="key" data-key="c">c</button>
-            <button class="key" data-key="v">v</button>
-            <button class="key" data-key="b">b</button>
-            <button class="key" data-key="n">n</button>
-            <button class="key" data-key="m">m</button>
-            <button class="key large" data-key="BACK">⌫</button>
-        </div>
+<div id="stats-modal">
+  <div class="stats-content">
+    <button class="close-btn" onclick="closeStats()">×</button>
+    <h2 style="margin-top:0; color:#40E0D0;">STATISTICS</h2>
+    <div class="stats-grid">
+      <div class="stat-box"><span class="stat-val" id="st-played">0</span><span>Played</span></div>
+      <div class="stat-box"><span class="stat-val" id="st-win">0</span><span>Win %</span></div>
+      <div class="stat-box"><span class="stat-val" id="st-streak">0</span><span>Current<br>Streak</span></div>
+      <div class="stat-box"><span class="stat-val" id="st-max">0</span><span>Max<br>Streak</span></div>
     </div>
+    <h3 style="margin-bottom: 5px; font-size: 1rem; text-align: left;">GUESS DISTRIBUTION</h3>
+    <div id="st-dist"></div>
+  </div>
+</div>
 
-    <script>
-        const WORD = "SMART";
-        const ROWS = 6;
-        const COLS = 5;
-        let currentRow = 0;
-        let currentTile = 0;
-        let boardState = Array(ROWS).fill("").map(() => Array(COLS).fill(""));
-        let isGameOver = false;
+<script>
+  const weeklySchedule = {
+    "2026-08-12": "EDIFY",
+    "2026-08-13": "STERN",
+    "2026-08-14": "TRAIN",
+    "2026-08-15": "PLANT",
+    "2026-08-16": "BEACH",
+    "2026-08-17": "MUSIC",
+    "2026-08-18": "BOOKS"
+  };
 
-        const boardElement = document.getElementById("board");
+  function getDailyWord() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    return weeklySchedule[todayStr] || "SMART";
+  }
 
-        function initBoard() {
-            for (let r = 0; r < ROWS; r++) {
-                const rowElement = document.createElement("div");
-                rowElement.classList.add("row");
-                for (let c = 0; c < COLS; c++) {
-                    const tileElement = document.createElement("div");
-                    tileElement.classList.add("tile");
-                    tileElement.id = `tile-${r}-${c}`;
-                    rowElement.appendChild(tileElement);
-                }
-                boardElement.appendChild(rowElement);
-            }
+  const word = getDailyWord();
+  let stats = JSON.parse(localStorage.getItem('wordle_stats')) || {
+    played: 0, wins: 0, currentStreak: 0, maxStreak: 0, dist: [0,0,0,0,0,0,0]
+  };
+  
+  if (!stats.dist || stats.dist.length < 7) stats.dist = [0,0,0,0,0,0,0];
+
+  if (localStorage.getItem('current_word') !== word) {
+    localStorage.removeItem('guesses');
+    localStorage.removeItem('r');
+    localStorage.removeItem('word_completed');
+    localStorage.removeItem('letter_states');
+    localStorage.removeItem('bonus_active');
+    localStorage.setItem('current_word', word);
+  }
+
+  let validWords = new Set([word, "ABOUT", "EDIFY", "STERN", "TRAIN", "PLANT", "BEACH", "MUSIC", "BOOKS", "SMART", "HOUSE", "WATER"]);
+
+  let savedDict = localStorage.getItem('full_dictionary');
+  if (savedDict) {
+    savedDict.split(',').forEach(w => validWords.add(w));
+  } else {
+    fetch('https://cdn.jsdelivr.net/gh/tabatkins/wordle-list@main/words')
+      .then(res => res.text())
+      .then(text => { 
+        let fetchedWords = [];
+        text.split('\n').forEach(w => { 
+          let trimmed = w.trim().toUpperCase();
+          if(trimmed) {
+            validWords.add(trimmed); 
+            fetchedWords.push(trimmed);
+          }
+        }); 
+        localStorage.setItem('full_dictionary', fetchedWords.join(','));
+      })
+      .catch(e => console.log("Dictionary loaded via fallback"));
+  }
+
+  let r = parseInt(localStorage.getItem('r')) || 0;
+  let guesses = JSON.parse(localStorage.getItem('guesses')) || Array.from({length: 7}, () => Array(5).fill(''));
+  
+  if (!Array.isArray(guesses) || guesses.length !== 7) {
+    guesses = Array.from({length: 7}, () => Array(5).fill(''));
+    r = 0;
+    localStorage.setItem('guesses', JSON.stringify(guesses));
+    localStorage.setItem('r', r);
+  }
+
+  let won = (localStorage.getItem('word_completed') === word);
+  let bonusActive = (localStorage.getItem('bonus_active') === 'true');
+  let over = (r >= 7 || (r >= 6 && !bonusActive && won === false));
+  let letterStates = JSON.parse(localStorage.getItem('letter_states')) || {};
+
+  const board = document.getElementById('b');
+  for (let i = 0; i < 7; i++) {
+    let row = document.createElement('div'); 
+    row.className = 'row';
+    if (i === 6) row.id = 'bonus-row';
+    if (i === 6 && !bonusActive && r < 6) row.style.display = 'none';
+    for (let j = 0; j < 5; j++) {
+      let tile = document.createElement('div'); tile.className = 'tile'; tile.id = \`t-${i}-${j}\`;
+      row.appendChild(tile);
+    }
+    board.appendChild(row);
+  }
+
+  const kbLayout = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+  let kbContainer = document.createElement('div');
+  kbContainer.className = 'keyboard';
+  kbLayout.forEach((rowStr, idx) => {
+    let kbRow = document.createElement('div');
+    kbRow.className = 'kb-row';
+    rowStr.split('').forEach(ch => {
+      let btn = document.createElement('button');
+      btn.className = 'kb-btn';
+      btn.id = \`kb-${ch}\`;
+      btn.innerText = ch;
+      btn.onclick = () => press(ch);
+      kbRow.appendChild(btn);
+    });
+    if (idx === 2) {
+      let enterBtn = document.createElement('button');
+      enterBtn.className = 'kb-btn wide';
+      enterBtn.innerText = 'ENTER';
+      enterBtn.onclick = () => press('ENTER');
+      kbRow.prepend(enterBtn);
+      let delBtn = document.createElement('button');
+      delBtn.className = 'kb-btn wide';
+      delBtn.innerText = '⌫';
+      delBtn.onclick = () => press('DEL');
+      kbRow.append(delBtn);
+    }
+    kbContainer.appendChild(kbRow);
+  });
+  document.body.appendChild(kbContainer);
+
+  for (let i = 0; i < 7; i++) {
+    let guessStr = guesses[i].join('');
+    if (guessStr.length === 5) {
+      paintRow(i, guessStr, false);
+    } else {
+      for (let j = 0; j < 5; j++) {
+        if (guesses[i][j]) {
+          document.getElementById(\`t-${i}-${j}\`).innerText = guesses[i][j];
         }
+      }
+    }
+  }
 
-        function showMessage(text, duration = 2000) {
-            const container = document.getElementById("message-container");
-            const msg = document.createElement("div");
-            msg.classList.add("message");
-            msg.textContent = text;
-            container.appendChild(msg);
-            setTimeout(() => {
-                msg.style.opacity = "0";
-                setTimeout(() => msg.remove(), 300);
-            }, duration);
+  if (bonusActive) {
+    document.getElementById('bonus-msg').style.display = 'block';
+    document.getElementById('bonus-row').style.display = 'grid';
+  }
+
+  updateKeyboardColors();
+
+  if (localStorage.getItem('word_completed') === word) { 
+    show(); 
+  } else if (over) {
+    show();
+  }
+
+  function press(k) {
+    if (over) return;
+    document.getElementById('msg-err').style.display = "none";
+
+    if (k === 'ENTER') {
+      check();
+    } else if (k === 'DEL') {
+      let rowG = guesses[r];
+      for (let j = 4; j >= 0; j--) {
+        if (rowG[j] !== '') {
+          rowG[j] = '';
+          document.getElementById(\`t-${r}-${j}\`).innerText = '';
+          break;
         }
-
-        function handleKeyPress(key) {
-            if (isGameOver) return;
-
-            if (key === "ENTER") {
-                if (currentTile < COLS) {
-                    showMessage("Not enough letters");
-                    return;
-                }
-                submitGuess();
-            } else if (key === "BACK" || key === "Backspace") {
-                if (currentTile > 0) {
-                    currentTile--;
-                    boardState[currentRow][currentTile] = "";
-                    updateBoard();
-                }
-            } else {
-                if (currentTile < COLS) {
-                    boardState[currentRow][currentTile] = key.toLowerCase();
-                    currentTile++;
-                    updateBoard();
-                }
-            }
+      }
+    } else {
+      let rowG = guesses[r];
+      for (let j = 0; j < 5; j++) {
+        if (rowG[j] === '') {
+          rowG[j] = k;
+          document.getElementById(\`t-${r}-${j}\`).innerText = k;
+          break;
         }
+      }
+    }
+  }
 
-        function updateBoard() {
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    const tile = document.getElementById(`tile-${r}-${c}`);
-                    tile.textContent = boardState[r][c];
-                    if (boardState[r][c]) {
-                        tile.classList.add("filled");
-                    } else {
-                        tile.classList.remove("filled");
-                    }
-                }
-            }
+  function check() {
+    let guess = guesses[r].join('');
+    if (guess.length < 5) return;
+
+    if (!validWords.has(guess)) {
+      let err = document.getElementById('msg-err');
+      err.style.display = 'block';
+      setTimeout(() => err.style.display = 'none', 1500);
+      return;
+    }
+
+    paintRow(r, guess, true);
+
+    if (guess === word) {
+      won = true;
+    }
+
+    localStorage.setItem('guesses', JSON.stringify(guesses));
+    r++;
+    localStorage.setItem('r', r);
+    localStorage.setItem('letter_states', JSON.stringify(letterStates));
+    updateKeyboardColors();
+
+    if (won) {
+      finish();
+    } else if (r === 6 && !bonusActive) {
+      bonusActive = true;
+      localStorage.setItem('bonus_active', 'true');
+      document.getElementById('bonus-msg').style.display = 'block';
+      document.getElementById('bonus-row').style.display = 'grid';
+    } else if (r >= 7 || (r >= 6 && !bonusActive)) {
+      finish();
+    }
+  }
+
+  function paintRow(rowIdx, guess, updateStates) {
+    let targetArr = word.split('');
+    let guessArr = guess.split('');
+    let rowTiles = [];
+    let rowColors = Array(5).fill('a');
+    
+    for (let i = 0; i < 5; i++) rowTiles.push(document.getElementById(\`t-${rowIdx}-${i}\`));
+    
+    for (let i = 0; i < 5; i++) {
+      rowTiles[i].innerText = guess[i];
+      if (guessArr[i] === targetArr[i]) { 
+        rowTiles[i].classList.add('c'); 
+        rowColors[i] = 'c';
+        targetArr[i] = null; 
+        guessArr[i] = null; 
+      }
+    }
+    for (let i = 0; i < 5; i++) {
+      if (guessArr[i] !== null) {
+        let idx = targetArr.indexOf(guessArr[i]);
+        if (idx > -1) { 
+          rowTiles[i].classList.add('p'); 
+          rowColors[i] = 'p';
+          targetArr[idx] = null; 
+        } else { 
+          rowTiles[i].classList.add('a'); 
+          rowColors[i] = 'a';
         }
+      }
+    }
 
-        function submitGuess() {
-            const guess = boardState[currentRow].join("").toUpperCase();
-            if (guess.length !== COLS) return;
+    if (updateStates) {
+      for (let i = 0; i < 5; i++) {
+        let ch = guess[i];
+        let col = rowColors[i];
+        if (letterStates[ch] === 'c') continue;
+        if (letterStates[ch] === 'p' && col === 'a') continue;
+        letterStates[ch] = col;
+      }
+    }
+  }
 
-            const solutionChars = WORD.split("");
-            const guessChars = guess.split("");
-            const rowTiles = [];
-            for (let c = 0; c < COLS; c++) {
-                rowTiles.push(document.getElementById(`tile-${currentRow}-${c}`));
-            }
+  function updateKeyboardColors() {
+    for (let ch in letterStates) {
+      let btn = document.getElementById(\`kb-${ch}\`);
+      if (btn) { btn.classList.remove('c', 'p', 'a'); btn.classList.add(letterStates[ch]); }
+    }
+  }
 
-            for (let c = 0; c < COLS; c++) {
-                if (guessChars[c] === solutionChars[c]) {
-                    rowTiles[c].classList.add("correct");
-                    solutionChars[c] = null;
-                    guessChars[c] = null;
-                }
-            }
-
-            for (let c = 0; c < COLS; c++) {
-                if (guessChars[c] !== null) {
-                    const index = solutionChars.indexOf(guessChars[c]);
-                    if (index > -1) {
-                        rowTiles[c].classList.add("present");
-                        solutionChars[index] = null;
-                    } else {
-                        rowTiles[c].classList.add("absent");
-                    }
-                }
-            }
-
-            if (guess === WORD) {
-                showMessage("Genius!", 4000);
-                isGameOver = true;
-                return;
-            }
-
-            currentRow++;
-            currentTile = 0;
-
-            if (currentRow === ROWS) {
-                showMessage(`Game Over! Word was: ${WORD}`, 5000);
-                isGameOver = true;
-            }
+  function finish() {
+    over = true;
+    if (localStorage.getItem('word_completed') !== word) {
+      stats.played++;
+      if (won) { 
+        stats.wins++; 
+        stats.currentStreak++; 
+        stats.dist[r-1] = (stats.dist[r-1] || 0) + 1; 
+        
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
         }
+      } else { 
+        stats.currentStreak = 0; 
+      }
+      localStorage.setItem('wordle_stats', JSON.stringify(stats));
+      localStorage.setItem('word_completed', word);
+    }
+    show();
+  }
 
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") handleKeyPress("ENTER");
-            else if (e.key === "Backspace") handleKeyPress("BACK");
-            else if (/^[a-zA-Z]$/.test(e.key)) handleKeyPress(e.key.toLowerCase());
-        });
+  function show() {
+    document.getElementById('box').style.display = 'block';
+    let text = \`Dr. Sean's Words ${won ? r : 'X'}/7\n\n\`;
+    
+    for (let i = 0; i < r; i++) {
+      let rowEmoji = '';
+      for (let j = 0; j < 5; j++) {
+        let tile = document.getElementById(\`t-${i}-${j}\`);
+        if (tile.classList.contains('c')) {
+          rowEmoji += '🟩';
+        } else if (tile.classList.contains('p')) {
+          rowEmoji += '🟨';
+        } else if (tile.classList.contains('a')) {
+          rowEmoji += '⬛';
+        } else {
+          rowEmoji += '⬛'; 
+        }
+      }
+      text += rowEmoji + '\n';
+    }
+    
+    document.getElementById('res').value = text;
+  }
+  
+  function shareResult() { 
+    navigator.clipboard.writeText(document.getElementById('res').value).then(() => {
+      let toast = document.getElementById('toast-msg');
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }); 
+  }
 
-        document.querySelectorAll(".key").forEach(button => {
-            const key = button.getAttribute("data-key");
-            
-            button.addEventListener("touchend", (e) => {
-                e.preventDefault();
-                handleKeyPress(key);
-            }, { passive: false });
+  function openStats() { 
+    document.getElementById('st-played').innerText = stats.played;
+    document.getElementById('st-win').innerText = stats.played ? Math.round((stats.wins / stats.played) * 100) : 0;
+    document.getElementById('st-streak').innerText = stats.currentStreak;
+    document.getElementById('st-max').innerText = stats.maxStreak;
+    
+    let distContainer = document.getElementById('st-dist');
+    distContainer.innerHTML = '';
+    let maxDist = Math.max(...stats.dist, 1);
+    for(let i = 0; i < 7; i++) {
+      let row = document.createElement('div');
+      row.className = 'dist-row';
+      row.innerHTML = \`<span class="dist-num">${i+1}</span><div class="dist-bar" style="width: ${Math.max(8, (stats.dist[i] / maxDist) * 100)}%">${stats.dist[i]}</div>\`;
+      distContainer.appendChild(row);
+    }
+    
+    document.getElementById('stats-modal').style.display = 'flex'; 
+  }
+  
+  function closeStats() { 
+    document.getElementById('stats-modal').style.display = 'none'; 
+  }
 
-            button.addEventListener("click", () => {
-                handleKeyPress(key);
-            });
-        });
-
-        initBoard();
-    </script>
+  // --- האזנה למקלדת פיזית ---
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      press('ENTER');
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      press('DEL');
+    } else if (/^[a-zA-Z]$/.test(e.key)) {
+      press(e.key.toUpperCase());
+    }
+  });
+</script>
 </body>
 </html>
